@@ -21,6 +21,15 @@ export interface Topic {
   updatedAt: number;
 }
 
+export interface Subtopic {
+  id: string;
+  topicId: string;
+  title: string;
+  isCompleted: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export type ScheduleStatus = 'Pending' | 'Completed';
 export type SessionType = 'Lecture' | 'Revision' | 'Practice' | 'Self Study';
 

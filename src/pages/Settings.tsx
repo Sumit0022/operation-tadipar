@@ -9,7 +9,7 @@ import { Select } from '../components/ui/Select';
 import { cn } from '../utils/cn';
 
 export default function Settings() {
-  const { subjects, schedules, holidays, importData, resetData } = useAppStore();
+  const { subjects, topics, subtopics, schedules, holidays, importData, resetData } = useAppStore();
   const { theme, setTheme, weekStartsOn, setWeekStartsOn } = useSettingsStore();
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -19,6 +19,8 @@ export default function Settings() {
       version: 1,
       timestamp: new Date().toISOString(),
       subjects,
+      topics,
+      subtopics,
       schedules,
       holidays,
     };
@@ -49,6 +51,8 @@ export default function Settings() {
         if (json.subjects && Array.isArray(json.subjects)) {
           importData({
             subjects: json.subjects,
+            topics: json.topics || [],
+            subtopics: json.subtopics || [],
             schedules: json.schedules || [],
             holidays: json.holidays || [],
           });

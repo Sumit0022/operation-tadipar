@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, CheckCircle2, Circle, Edit2, Trash2, Book } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Plus, CheckCircle2, Circle, Edit2, Trash2, Book, ChevronRight, ChevronDown } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import toast from 'react-hot-toast';
 import { useAppStore } from '../store';
@@ -22,20 +22,36 @@ const itemVariants = {
   show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 400, damping: 30 } }
 };
 
+const toRoman = (num: number): string => {
+  const lookup: { [key: string]: number } = {M:1000,CM:900,D:500,CD:400,C:100,XC:90,L:50,XL:40,X:10,IX:9,V:5,IV:4,I:1};
+  let roman = '';
+  for (let i in lookup) {
+    while (num >= lookup[i]) {
+      roman += i;
+      num -= lookup[i];
+    }
+  }
+  return roman.toLowerCase();
+};
+
 export default function SubjectDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { subjects, topics, addTopic, updateTopic, deleteTopic } = useAppStore();
+  const { subjects, topics, subtopics, addTopic, updateTopic, deleteTopic, addSubtopic, updateSubtopic, deleteSubtopic } = useAppStore();
   
   const subject = subjects.find(s => s.id === id);
   const subjectTopics = useMemo(() => topics.filter(t => t.subjectId === id).sort((a, b) => a.createdAt - b.createdAt), [topics, id]);
   
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    targetRevisions: 3
-  });
+  const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
+  const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
+  const [topicFormData, setTopicFormData] = useState({ title: '', targetRevisions: 3 });
+
+  const [isSubtopicModalOpen, setIsSubtopicModalOpen] = useState(false);
+  const [activeTopicIdForSub, setActiveTopicIdForSub] = useState<string | null>(null);
+  const [editingSubtopicId, setEditingSubtopicId] = useState<string | null>(null);
+  const [subtopicFormData, setSubtopicFormData] = useState({ title: '' });
+
+  const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
 
   if (!subject) {
     return (
@@ -51,46 +67,104 @@ export default function SubjectDetails() {
   const completedTopics = subjectTopics.filter(t => t.isCompleted).length;
   const progressPercent = subjectTopics.length === 0 ? 0 : Math.round((completedTopics / subjectTopics.length) * 100);
 
-  const openModal = (topicId?: string) => {
+  const toggleExpand = (topicId: string) => {
+    const newExpanded = new Set(expandedTopics);
+    if (newExpanded.has(topicId)) {
+      newExpanded.delete(topicId);
+    } else {
+      newExpanded.add(topicId);
+    }
+    setExpandedTopics(newExpanded);
+  };
+
+  // Topic Modal
+  const openTopicModal = (topicId?: string) => {
     if (topicId) {
       const topic = topics.find(t => t.id === topicId);
       if (topic) {
-        setFormData({ title: topic.title, targetRevisions: topic.targetRevisions });
-        setEditingId(topicId);
+        setTopicFormData({ title: topic.title, targetRevisions: topic.targetRevisions });
+        setEditingTopicId(topicId);
       }
     } else {
-      setFormData({ title: '', targetRevisions: 3 });
-      setEditingId(null);
+      setTopicFormData({ title: '', targetRevisions: 3 });
+      setEditingTopicId(null);
     }
-    setIsModalOpen(true);
+    setIsTopicModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleTopicSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim()) return toast.error('Topic title is required');
-    if (formData.targetRevisions < 0) return toast.error('Target revisions cannot be negative');
+    if (!topicFormData.title.trim()) return toast.error('Topic title is required');
+    if (topicFormData.targetRevisions < 0) return toast.error('Target revisions cannot be negative');
 
-    if (editingId) {
-      updateTopic(editingId, formData);
+    if (editingTopicId) {
+      updateTopic(editingTopicId, topicFormData);
       toast.success('Topic updated');
     } else {
       addTopic({
         id: uuidv4(),
         subjectId: subject.id,
-        title: formData.title,
-        targetRevisions: formData.targetRevisions,
+        title: topicFormData.title,
+        targetRevisions: topicFormData.targetRevisions,
         revisionsCompleted: 0,
         isCompleted: false,
       });
       toast.success('Topic added');
     }
-    setIsModalOpen(false);
+    setIsTopicModalOpen(false);
   };
 
-  const handleDelete = (topicId: string, title: string) => {
-    if (window.confirm(`Delete topic "${title}"?`)) {
+  // Subtopic Modal
+  const openSubtopicModal = (topicId: string, subtopicId?: string) => {
+    setActiveTopicIdForSub(topicId);
+    if (subtopicId) {
+      const subtopic = subtopics.find(st => st.id === subtopicId);
+      if (subtopic) {
+        setSubtopicFormData({ title: subtopic.title });
+        setEditingSubtopicId(subtopicId);
+      }
+    } else {
+      setSubtopicFormData({ title: '' });
+      setEditingSubtopicId(null);
+    }
+    setIsSubtopicModalOpen(true);
+    
+    if (!expandedTopics.has(topicId)) {
+      toggleExpand(topicId);
+    }
+  };
+
+  const handleSubtopicSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subtopicFormData.title.trim()) return toast.error('Subtopic title is required');
+    if (!activeTopicIdForSub) return;
+
+    if (editingSubtopicId) {
+      updateSubtopic(editingSubtopicId, subtopicFormData);
+      toast.success('Subtopic updated');
+    } else {
+      addSubtopic({
+        id: uuidv4(),
+        topicId: activeTopicIdForSub,
+        title: subtopicFormData.title,
+        isCompleted: false,
+      });
+      toast.success('Subtopic added');
+    }
+    setIsSubtopicModalOpen(false);
+  };
+
+  const handleDeleteTopic = (topicId: string, title: string) => {
+    if (window.confirm(`Delete topic "${title}" and all its subtopics?`)) {
       deleteTopic(topicId);
       toast.success('Topic deleted');
+    }
+  };
+
+  const handleDeleteSubtopic = (subtopicId: string, title: string) => {
+    if (window.confirm(`Delete subtopic "${title}"?`)) {
+      deleteSubtopic(subtopicId);
+      toast.success('Subtopic deleted');
     }
   };
 
@@ -98,17 +172,20 @@ export default function SubjectDetails() {
     updateTopic(topicId, { isCompleted: !currentState });
   };
 
+  const toggleSubtopicCompletion = (subtopicId: string, currentState: boolean) => {
+    updateSubtopic(subtopicId, { isCompleted: !currentState });
+  };
+
   const incrementRevision = (topicId: string, current: number, target: number) => {
     if (current < target) {
       updateTopic(topicId, { revisionsCompleted: current + 1 });
     } else {
-      // Optional: allow resetting or just capping
       updateTopic(topicId, { revisionsCompleted: 0 });
     }
   };
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-8 max-w-5xl mx-auto">
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-8 max-w-5xl mx-auto pb-12">
       {/* Header */}
       <motion.div variants={itemVariants} className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/subjects')} className="rounded-full bg-muted/50 hover:bg-muted">
@@ -124,7 +201,7 @@ export default function SubjectDetails() {
               {subject.shortName && <span className="text-muted-foreground font-semibold">{subject.shortName}</span>}
             </div>
           </div>
-          <Button onClick={() => openModal()} size="lg">
+          <Button onClick={() => openTopicModal()} size="lg">
             <Plus className="w-5 h-5 mr-2" />
             Add Topic
           </Button>
@@ -163,80 +240,154 @@ export default function SubjectDetails() {
           <Card className="flex flex-col items-center justify-center p-16 text-center border-dashed bg-card/20">
             <h3 className="text-xl font-bold mb-2">No topics added</h3>
             <p className="text-muted-foreground max-w-sm mb-6">Break down your subject into chapters or topics to track your progress.</p>
-            <Button onClick={() => openModal()}>Add your first topic</Button>
+            <Button onClick={() => openTopicModal()}>Add your first topic</Button>
           </Card>
         ) : (
-          <div className="space-y-3">
-            {subjectTopics.map((topic, index) => (
-              <motion.div 
-                key={topic.id}
-                variants={itemVariants}
-                className="glass rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 group transition-all hover:shadow-xl hover:border-white/20"
-              >
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <button 
-                    onClick={() => toggleTopicCompletion(topic.id, topic.isCompleted)}
-                    className="flex-shrink-0 focus:outline-none transition-transform active:scale-90"
-                  >
-                    {topic.isCompleted ? (
-                      <CheckCircle2 className="w-8 h-8 drop-shadow-md" style={{ color: subject.color }} />
-                    ) : (
-                      <Circle className="w-8 h-8 text-muted-foreground/50 hover:text-muted-foreground" />
+          <div className="space-y-4">
+            {subjectTopics.map((topic, index) => {
+              const topicSubtopics = subtopics.filter(st => st.topicId === topic.id).sort((a,b) => a.createdAt - b.createdAt);
+              const isExpanded = expandedTopics.has(topic.id);
+              
+              return (
+                <motion.div key={topic.id} variants={itemVariants} className="flex flex-col gap-2">
+                  <div className="glass rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 group transition-all hover:shadow-xl hover:border-white/20 relative overflow-hidden">
+                    <div className="absolute left-0 top-0 bottom-0 w-1.5 opacity-80" style={{ backgroundColor: subject.color }} />
+                    
+                    <div className="flex items-center gap-4 flex-1 min-w-0 pl-3">
+                      <button 
+                        onClick={() => toggleTopicCompletion(topic.id, topic.isCompleted)}
+                        className="flex-shrink-0 focus:outline-none transition-transform active:scale-90"
+                      >
+                        {topic.isCompleted ? (
+                          <CheckCircle2 className="w-8 h-8 drop-shadow-md" style={{ color: subject.color }} />
+                        ) : (
+                          <Circle className="w-8 h-8 text-muted-foreground/50 hover:text-muted-foreground" />
+                        )}
+                      </button>
+                      
+                      <div className="flex-1 cursor-pointer flex items-center gap-2" onClick={() => toggleExpand(topic.id)}>
+                        <h3 className={cn("text-lg font-bold truncate transition-colors duration-300 flex items-center gap-2", topic.isCompleted && "text-muted-foreground line-through")}>
+                          <span>{index + 1}.</span> {topic.title}
+                        </h3>
+                        {topicSubtopics.length > 0 && (
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+                            {topicSubtopics.length} sub
+                          </span>
+                        )}
+                        <Button variant="ghost" size="icon" className="w-6 h-6 rounded-full text-muted-foreground">
+                          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between md:justify-end gap-4 ml-12 md:ml-0">
+                      {/* Revisions Tracker */}
+                      {topic.targetRevisions > 0 && (
+                        <div className="flex flex-col items-start md:items-end">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Revisions</span>
+                          <button 
+                            onClick={() => incrementRevision(topic.id, topic.revisionsCompleted, topic.targetRevisions)}
+                            className="flex gap-1.5 p-1 -m-1 rounded-lg hover:bg-secondary/50 transition-colors"
+                            title="Click to mark revision complete"
+                          >
+                            {Array.from({ length: Math.max(topic.targetRevisions, topic.revisionsCompleted) }).map((_, i) => (
+                              <div 
+                                key={i}
+                                className={cn(
+                                  "w-3 h-3 rounded-full transition-all duration-300",
+                                  i < topic.revisionsCompleted ? "shadow-sm scale-110" : "bg-muted-foreground/30",
+                                  i >= topic.targetRevisions && i < topic.revisionsCompleted && "ring-2 ring-offset-1 ring-offset-card"
+                                )}
+                                style={i < topic.revisionsCompleted ? { backgroundColor: subject.color } : {}}
+                              />
+                            ))}
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => openSubtopicModal(topic.id)} title="Add Subtopic">
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openTopicModal(topic.id)} title="Edit Topic">
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteTopic(topic.id, topic.title)} title="Delete Topic">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Subtopics Nested List */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden pl-6 md:pl-12 pr-2"
+                      >
+                        <div className="pl-4 py-2 border-l-2 border-border/50 space-y-2 mb-2">
+                          {topicSubtopics.map((sub, sIdx) => (
+                            <div key={sub.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-secondary/40 transition-colors group">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <button 
+                                  onClick={() => toggleSubtopicCompletion(sub.id, sub.isCompleted)}
+                                  className="focus:outline-none flex-shrink-0"
+                                >
+                                  {sub.isCompleted ? (
+                                    <CheckCircle2 className="w-5 h-5" style={{ color: subject.color }} />
+                                  ) : (
+                                    <Circle className="w-5 h-5 text-muted-foreground/40 hover:text-muted-foreground transition-colors" />
+                                  )}
+                                </button>
+                                <span className={cn(
+                                  "text-sm font-medium truncate flex items-center gap-2",
+                                  sub.isCompleted && "line-through text-muted-foreground"
+                                )}>
+                                  <span className="text-muted-foreground w-6 inline-block font-mono text-xs">{toRoman(sIdx + 1)}.</span>
+                                  {sub.title}
+                                </span>
+                              </div>
+                              <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground" onClick={() => openSubtopicModal(topic.id, sub.id)}>
+                                  <Edit2 className="w-3 h-3" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive/70 hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteSubtopic(sub.id, sub.title)}>
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                          
+                          <button 
+                            onClick={() => openSubtopicModal(topic.id)}
+                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors p-2 font-medium"
+                          >
+                            <Plus className="w-4 h-4" /> Add Subtopic
+                          </button>
+                        </div>
+                      </motion.div>
                     )}
-                  </button>
-                  <h3 className={cn("text-lg font-bold truncate transition-colors duration-300", topic.isCompleted && "text-muted-foreground line-through")}>
-                    {index + 1}. {topic.title}
-                  </h3>
-                </div>
-                
-                <div className="flex items-center justify-between md:justify-end gap-6 ml-12 md:ml-0">
-                  {/* Revisions Tracker */}
-                  <div className="flex flex-col items-start md:items-end">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Revisions</span>
-                    <button 
-                      onClick={() => incrementRevision(topic.id, topic.revisionsCompleted, topic.targetRevisions)}
-                      className="flex gap-1.5 p-1 -m-1 rounded-lg hover:bg-secondary/50 transition-colors"
-                      title="Click to mark revision complete"
-                    >
-                      {Array.from({ length: Math.max(topic.targetRevisions, topic.revisionsCompleted) }).map((_, i) => (
-                        <div 
-                          key={i}
-                          className={cn(
-                            "w-3 h-3 rounded-full transition-all duration-300",
-                            i < topic.revisionsCompleted 
-                              ? "shadow-sm scale-110" 
-                              : "bg-muted-foreground/30",
-                            i >= topic.targetRevisions && i < topic.revisionsCompleted && "ring-2 ring-offset-1 ring-offset-card" // extra revisions
-                          )}
-                          style={i < topic.revisionsCompleted ? { backgroundColor: subject.color } : {}}
-                        />
-                      ))}
-                    </button>
-                  </div>
-                  
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openModal(topic.id)}>
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(topic.id, topic.title)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                  </AnimatePresence>
+
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </motion.div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Edit Topic" : "Add Topic"}>
-        <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Topic Modal */}
+      <Modal isOpen={isTopicModalOpen} onClose={() => setIsTopicModalOpen(false)} title={editingTopicId ? "Edit Topic" : "Add Topic"}>
+        <form onSubmit={handleTopicSubmit} className="space-y-5">
           <Input
             label="Topic / Chapter Title *"
             placeholder="e.g. Thermodynamics, Chapter 1"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            value={topicFormData.title}
+            onChange={(e) => setTopicFormData({ ...topicFormData, title: e.target.value })}
             autoFocus
           />
           
@@ -246,17 +397,36 @@ export default function SubjectDetails() {
             max="10"
             label="Target Revisions"
             placeholder="How many times do you plan to revise?"
-            value={formData.targetRevisions}
-            onChange={(e) => setFormData({ ...formData, targetRevisions: parseInt(e.target.value) || 0 })}
+            value={topicFormData.targetRevisions}
+            onChange={(e) => setTopicFormData({ ...topicFormData, targetRevisions: parseInt(e.target.value) || 0 })}
           />
           <p className="text-xs text-muted-foreground -mt-2">Set to 0 if you don't want to track revisions for this topic.</p>
           
           <div className="flex justify-end gap-3 pt-6 border-t border-border/50">
-            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit">{editingId ? "Save Changes" : "Add Topic"}</Button>
+            <Button type="button" variant="ghost" onClick={() => setIsTopicModalOpen(false)}>Cancel</Button>
+            <Button type="submit">{editingTopicId ? "Save Changes" : "Add Topic"}</Button>
           </div>
         </form>
       </Modal>
+
+      {/* Subtopic Modal */}
+      <Modal isOpen={isSubtopicModalOpen} onClose={() => setIsSubtopicModalOpen(false)} title={editingSubtopicId ? "Edit Subtopic" : "Add Subtopic"}>
+        <form onSubmit={handleSubtopicSubmit} className="space-y-5">
+          <Input
+            label="Subtopic Title *"
+            placeholder="e.g. Introduction and Basic Concepts"
+            value={subtopicFormData.title}
+            onChange={(e) => setSubtopicFormData({ ...subtopicFormData, title: e.target.value })}
+            autoFocus
+          />
+          
+          <div className="flex justify-end gap-3 pt-6 border-t border-border/50">
+            <Button type="button" variant="ghost" onClick={() => setIsSubtopicModalOpen(false)}>Cancel</Button>
+            <Button type="submit">{editingSubtopicId ? "Save Changes" : "Add Subtopic"}</Button>
+          </div>
+        </form>
+      </Modal>
+
     </motion.div>
   );
 }

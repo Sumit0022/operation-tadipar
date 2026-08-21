@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import localforage from 'localforage';
-import type { Subject, Schedule, Holiday, Topic } from '../types';
+import type { Subject, Schedule, Holiday, Topic, Subtopic } from '../types';
 
 // Configure localforage
 localforage.config({
@@ -27,6 +27,7 @@ export const customStorage = createJSONStorage(() => storage);
 interface AppState {
   subjects: Subject[];
   topics: Topic[];
+  subtopics: Subtopic[];
   schedules: Schedule[];
   holidays: Holiday[];
   
@@ -39,6 +40,10 @@ interface AppState {
   updateTopic: (id: string, topic: Partial<Topic>) => void;
   deleteTopic: (id: string) => void;
   
+  addSubtopic: (subtopic: Omit<Subtopic, 'createdAt' | 'updatedAt'>) => void;
+  updateSubtopic: (id: string, subtopic: Partial<Subtopic>) => void;
+  deleteSubtopic: (id: string) => void;
+  
   addSchedule: (schedule: Omit<Schedule, 'createdAt' | 'updatedAt'>) => void;
   updateSchedule: (id: string, schedule: Partial<Schedule>) => void;
   deleteSchedule: (id: string) => void;
@@ -48,7 +53,7 @@ interface AppState {
   deleteHoliday: (id: string) => void;
   
   // Data Management
-  importData: (data: { subjects: Subject[], topics?: Topic[], schedules: Schedule[], holidays: Holiday[] }) => void;
+  importData: (data: { subjects: Subject[], topics?: Topic[], subtopics?: Subtopic[], schedules: Schedule[], holidays: Holiday[] }) => void;
   resetData: () => void;
 }
 
@@ -57,6 +62,7 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       subjects: [],
       topics: [],
+      subtopics: [],
       schedules: [],
       holidays: [],
       
@@ -66,10 +72,14 @@ export const useAppStore = create<AppState>()(
       updateSubject: (id, subject) => set((state) => ({
         subjects: state.subjects.map(s => s.id === id ? { ...s, ...subject, updatedAt: Date.now() } : s)
       })),
-      deleteSubject: (id) => set((state) => ({
-        subjects: state.subjects.filter(s => s.id !== id),
-        topics: state.topics.filter(t => t.subjectId !== id)
-      })),
+      deleteSubject: (id) => set((state) => {
+        const topicsToDelete = state.topics.filter(t => t.subjectId === id).map(t => t.id);
+        return {
+          subjects: state.subjects.filter(s => s.id !== id),
+          topics: state.topics.filter(t => t.subjectId !== id),
+          subtopics: state.subtopics.filter(st => !topicsToDelete.includes(st.topicId))
+        };
+      }),
       
       addTopic: (topic) => set((state) => ({
         topics: [...state.topics, { ...topic, createdAt: Date.now(), updatedAt: Date.now() }]
@@ -78,7 +88,18 @@ export const useAppStore = create<AppState>()(
         topics: state.topics.map(t => t.id === id ? { ...t, ...topic, updatedAt: Date.now() } : t)
       })),
       deleteTopic: (id) => set((state) => ({
-        topics: state.topics.filter(t => t.id !== id)
+        topics: state.topics.filter(t => t.id !== id),
+        subtopics: state.subtopics.filter(st => st.topicId !== id)
+      })),
+      
+      addSubtopic: (subtopic) => set((state) => ({
+        subtopics: [...state.subtopics, { ...subtopic, createdAt: Date.now(), updatedAt: Date.now() }]
+      })),
+      updateSubtopic: (id, subtopic) => set((state) => ({
+        subtopics: state.subtopics.map(st => st.id === id ? { ...st, ...subtopic, updatedAt: Date.now() } : st)
+      })),
+      deleteSubtopic: (id) => set((state) => ({
+        subtopics: state.subtopics.filter(st => st.id !== id)
       })),
       
       addSchedule: (schedule) => set((state) => ({
@@ -104,12 +125,14 @@ export const useAppStore = create<AppState>()(
       importData: (data) => set(() => ({
         subjects: data.subjects || [],
         topics: data.topics || [],
+        subtopics: data.subtopics || [],
         schedules: data.schedules || [],
         holidays: data.holidays || [],
       })),
       resetData: () => set(() => ({
         subjects: [],
         topics: [],
+        subtopics: [],
         schedules: [],
         holidays: [],
       }))
