@@ -17,6 +17,7 @@ import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { TimePicker } from '../components/ui/TimePicker';
 import { DatePicker } from '../components/ui/DatePicker';
+import { DateRangePicker } from '../components/ui/DateRangePicker';
 import { cn } from '../utils/cn';
 import type { Schedule } from '../types';
 
@@ -186,10 +187,10 @@ export default function Calendar() {
 
   const handleCopySubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!copyTargetStartDate || !copyTargetEndDate) return toast.error('Please select start and end dates');
+    if (!copyTargetStartDate) return toast.error('Please select a target date');
     
     const start = parseISO(copyTargetStartDate);
-    const end = parseISO(copyTargetEndDate);
+    const end = copyTargetEndDate ? parseISO(copyTargetEndDate) : start;
     
     if (end < start) {
       return toast.error('End date cannot be before start date');
@@ -642,19 +643,16 @@ export default function Calendar() {
         title="Copy Schedule to Another Date"
       >
         <form onSubmit={handleCopySubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <DatePicker
-              label="From Date *"
-              value={copyTargetStartDate}
-              onChange={(val) => setCopyTargetStartDate(val)}
-            />
-            <DatePicker
-              label="To Date *"
-              value={copyTargetEndDate}
-              onChange={(val) => setCopyTargetEndDate(val)}
-              align="right"
-            />
-          </div>
+          <DateRangePicker
+            label="Target Date Range *"
+            startDate={copyTargetStartDate}
+            endDate={copyTargetEndDate}
+            onChange={(start, end) => {
+              setCopyTargetStartDate(start);
+              setCopyTargetEndDate(end);
+            }}
+            align="center"
+          />
           
           <div className="bg-secondary/50 p-4 rounded-xl text-sm border border-border/50 font-medium leading-relaxed">
             This will duplicate all <strong>{dateSchedules.length}</strong> session(s) from <strong>{format(selectedDate, 'd MMM yyyy')}</strong> to every date in the selected range.
