@@ -146,12 +146,12 @@ export function TimePicker({ label, value, onChange, align = 'left' }: TimePicke
         <AnimatePresence>
           {isOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className={cn(
-                "absolute z-50 bottom-full mb-2 p-4 rounded-3xl glass border border-white/10 shadow-2xl w-full min-w-[280px]",
+                "absolute z-50 top-full mt-2 p-4 rounded-3xl glass border border-white/10 shadow-2xl w-full min-w-[280px]",
                 align === 'left' && "left-0",
                 align === 'right' && "right-0",
                 align === 'center' && "left-1/2 -translate-x-1/2"
