@@ -499,6 +499,9 @@ export default function Calendar() {
             <Button type="button" variant="ghost" onClick={() => setIsCopyModalOpen(false)}>Cancel</Button>
             <Button type="submit">Copy Schedule</Button>
           </div>
+        </form>
+      </Modal>
+
       <Modal
         isOpen={isDateDetailsModalOpen}
         onClose={() => setIsDateDetailsModalOpen(false)}
