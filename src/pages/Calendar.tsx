@@ -11,7 +11,6 @@ import toast from 'react-hot-toast';
 import { useAppStore } from '../store';
 import { useSettingsStore } from '../store/settings';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
