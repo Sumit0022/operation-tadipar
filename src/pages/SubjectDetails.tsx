@@ -167,7 +167,7 @@ export default function SubjectDetails() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {subjectTopics.map(topic => (
+            {subjectTopics.map((topic, index) => (
               <motion.div 
                 key={topic.id}
                 variants={itemVariants}
@@ -185,7 +185,7 @@ export default function SubjectDetails() {
                     )}
                   </button>
                   <h3 className={cn("text-lg font-bold truncate transition-colors duration-300", topic.isCompleted && "text-muted-foreground line-through")}>
-                    {topic.title}
+                    {index + 1}. {topic.title}
                   </h3>
                 </div>
                 

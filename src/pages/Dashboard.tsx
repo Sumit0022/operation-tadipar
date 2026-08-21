@@ -177,7 +177,7 @@ export default function Dashboard() {
                         </div>
                         {topic ? (
                           <div className={cn("text-xs font-bold text-foreground/70 mb-1", isCompleted && "text-muted-foreground/70")}>
-                            Topic: {topic.title}
+                            Topic: {topics.filter(t => t.subjectId === schedule.subjectId).sort((a,b) => a.createdAt - b.createdAt).findIndex(t => t.id === topic.id) + 1}. {topic.title}
                           </div>
                         ) : null}
                         

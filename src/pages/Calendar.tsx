@@ -436,7 +436,7 @@ export default function Calendar() {
                             
                             {schedule.topicId ? (
                               <div className="text-sm font-semibold text-foreground/80 mt-1">
-                                Topic: {topics.find(t => t.id === schedule.topicId)?.title || 'Unknown Topic'}
+                                Topic: {topics.filter(t => t.subjectId === schedule.subjectId).sort((a,b) => a.createdAt - b.createdAt).findIndex(t => t.id === schedule.topicId) + 1}. {topics.find(t => t.id === schedule.topicId)?.title || 'Unknown Topic'}
                               </div>
                             ) : null}
                             
@@ -514,8 +514,8 @@ export default function Calendar() {
                 onChange={(e) => setScheduleForm({ ...scheduleForm, topicId: e.target.value })}
               >
                 <option value="">No specific topic</option>
-                {topics.filter(t => t.subjectId === scheduleForm.subjectId).map(t => (
-                  <option key={t.id} value={t.id}>{t.title}</option>
+                {topics.filter(t => t.subjectId === scheduleForm.subjectId).sort((a,b) => a.createdAt - b.createdAt).map((t, index) => (
+                  <option key={t.id} value={t.id}>{index + 1}. {t.title}</option>
                 ))}
               </Select>
               
