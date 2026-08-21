@@ -203,12 +203,12 @@ export function DateRangePicker({ label, startDate, endDate, onChange, align = '
         <AnimatePresence>
           {isOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className={cn(
-                "absolute z-50 bottom-full mb-2 p-5 rounded-3xl glass border border-white/10 shadow-2xl w-[320px]",
+                "absolute z-50 top-full mt-2 p-5 rounded-3xl glass border border-white/10 shadow-2xl w-[320px]",
                 align === 'left' && "left-0",
                 align === 'right' && "right-0",
                 align === 'center' && "left-1/2 -translate-x-1/2"
