@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { 
   format, addMonths, subMonths, startOfMonth, endOfMonth, 
-  eachDayOfInterval, isSameMonth, isSameDay, isToday
+  eachDayOfInterval, isSameMonth, isSameDay, isToday,
+  parseISO, addDays, differenceInDays
 } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, CheckCircle2, Circle, Copy, Trash2, Clock, MapPin, Edit2 } from 'lucide-react';
@@ -43,7 +44,8 @@ export default function Calendar() {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
-  const [copyTargetDate, setCopyTargetDate] = useState('');
+  const [copyTargetStartDate, setCopyTargetStartDate] = useState('');
+  const [copyTargetEndDate, setCopyTargetEndDate] = useState('');
   
   // Form State
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
@@ -184,27 +186,47 @@ export default function Calendar() {
 
   const handleCopySubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!copyTargetDate) return toast.error('Please select a target date');
-    if (copyTargetDate === selectedDateStr) return toast.error('Cannot copy to the same date');
+    if (!copyTargetStartDate || !copyTargetEndDate) return toast.error('Please select start and end dates');
     
-    dateSchedules.forEach(schedule => {
-      addSchedule({
-        id: uuidv4(),
-        date: copyTargetDate,
-        subjectId: schedule.subjectId,
-        topicId: schedule.topicId,
-        sessionType: schedule.sessionType,
-        taskTitle: schedule.taskTitle,
-        notes: schedule.notes,
-        startTime: schedule.startTime,
-        endTime: schedule.endTime,
-        status: 'Pending',
-      });
-    });
+    const start = parseISO(copyTargetStartDate);
+    const end = parseISO(copyTargetEndDate);
     
-    toast.success(`Copied ${dateSchedules.length} sessions`);
+    if (end < start) {
+      return toast.error('End date cannot be before start date');
+    }
+
+    let currentDate = start;
+    let totalCopied = 0;
+    
+    while (currentDate <= end) {
+      const dateString = format(currentDate, 'yyyy-MM-dd');
+      
+      // Skip if trying to copy onto the exact same source date
+      if (dateString !== selectedDateStr) {
+        dateSchedules.forEach(schedule => {
+          addSchedule({
+            id: uuidv4(),
+            date: dateString,
+            subjectId: schedule.subjectId,
+            topicId: schedule.topicId,
+            sessionType: schedule.sessionType,
+            taskTitle: schedule.taskTitle,
+            notes: schedule.notes,
+            startTime: schedule.startTime,
+            endTime: schedule.endTime,
+            status: 'Pending',
+          });
+          totalCopied++;
+        });
+      }
+      
+      currentDate = addDays(currentDate, 1);
+    }
+    
+    toast.success(`Copied ${totalCopied} session(s) across ${differenceInDays(end, start) + 1} day(s)`);
     setIsCopyModalOpen(false);
-    setCopyTargetDate('');
+    setCopyTargetStartDate('');
+    setCopyTargetEndDate('');
   };
 
   const renderCalendarDay = (day: Date) => {
@@ -620,15 +642,22 @@ export default function Calendar() {
         title="Copy Schedule to Another Date"
       >
         <form onSubmit={handleCopySubmit} className="space-y-6">
-          <DatePicker
-            label="Target Date *"
-            value={copyTargetDate}
-            onChange={(val) => setCopyTargetDate(val)}
-            align="center"
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <DatePicker
+              label="From Date *"
+              value={copyTargetStartDate}
+              onChange={(val) => setCopyTargetStartDate(val)}
+            />
+            <DatePicker
+              label="To Date *"
+              value={copyTargetEndDate}
+              onChange={(val) => setCopyTargetEndDate(val)}
+              align="right"
+            />
+          </div>
           
           <div className="bg-secondary/50 p-4 rounded-xl text-sm border border-border/50 font-medium leading-relaxed">
-            This will duplicate all <strong>{dateSchedules.length}</strong> session(s) from <strong>{format(selectedDate, 'd MMM yyyy')}</strong> to the selected date.
+            This will duplicate all <strong>{dateSchedules.length}</strong> session(s) from <strong>{format(selectedDate, 'd MMM yyyy')}</strong> to every date in the selected range.
           </div>
           
           <div className="flex justify-end gap-3 pt-6 border-t border-border/50">
