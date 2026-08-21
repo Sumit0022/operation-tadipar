@@ -27,6 +27,15 @@ export function TimePicker({ label, value, onChange }: TimePickerProps) {
 
   const [mode, setMode] = useState<'hour' | 'minute'>('hour');
 
+  // Sync state if value prop changes externally (e.g. editing a different schedule)
+  useEffect(() => {
+    const [h24, m] = value.split(':');
+    const hNum = parseInt(h24, 10);
+    setAmPm(hNum >= 12 ? 'PM' : 'AM');
+    setHour(hNum % 12 || 12);
+    setMinute(parseInt(m, 10));
+  }, [value]);
+
   // Close when clicking outside
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -46,7 +55,11 @@ export function TimePicker({ label, value, onChange }: TimePickerProps) {
     
     const formattedHour = h24.toString().padStart(2, '0');
     const formattedMinute = minute.toString().padStart(2, '0');
-    onChange(`${formattedHour}:${formattedMinute}`);
+    
+    // Only call onChange if it actually changed to prevent infinite loops
+    if (`${formattedHour}:${formattedMinute}` !== value) {
+      onChange(`${formattedHour}:${formattedMinute}`);
+    }
   }, [hour, minute, amPm]);
 
   const displayHour = hour.toString().padStart(2, '0');
@@ -88,7 +101,10 @@ export function TimePicker({ label, value, onChange }: TimePickerProps) {
           return (
             <button
               key={num}
-              onClick={() => {
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 if (mode === 'hour') {
                   setHour(num);
                   setTimeout(() => setMode('minute'), 300);
