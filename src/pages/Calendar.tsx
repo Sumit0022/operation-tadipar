@@ -15,6 +15,7 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { TimePicker } from '../components/ui/TimePicker';
+import { DatePicker } from '../components/ui/DatePicker';
 import { cn } from '../utils/cn';
 import type { Schedule } from '../types';
 
@@ -618,17 +619,15 @@ export default function Calendar() {
         onClose={() => setIsCopyModalOpen(false)}
         title="Copy Schedule to Another Date"
       >
-        <form onSubmit={handleCopySubmit} className="space-y-5">
-          <Input
-            type="date"
+        <form onSubmit={handleCopySubmit} className="space-y-6">
+          <DatePicker
             label="Target Date *"
             value={copyTargetDate}
-            onChange={(e) => setCopyTargetDate(e.target.value)}
-            required
-            autoFocus
+            onChange={(val) => setCopyTargetDate(val)}
+            align="center"
           />
           
-          <div className="p-4 bg-primary/10 text-primary rounded-2xl text-sm border border-primary/20 font-medium leading-relaxed">
+          <div className="bg-secondary/50 p-4 rounded-xl text-sm border border-border/50 font-medium leading-relaxed">
             This will duplicate all <strong>{dateSchedules.length}</strong> session(s) from <strong>{format(selectedDate, 'd MMM yyyy')}</strong> to the selected date.
           </div>
           
