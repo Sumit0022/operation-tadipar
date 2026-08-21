@@ -281,7 +281,7 @@ export default function DaySchedule() {
               )}
             </motion.div>
           ) : (
-            <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
+            <motion.div variants={itemVariants} className="flex flex-col gap-4 mt-4">
               <AnimatePresence>
                 {dateSchedules.map(schedule => {
                   const subject = subjects.find(s => s.id === schedule.subjectId);
@@ -290,71 +290,75 @@ export default function DaySchedule() {
                   return (
                     <motion.div 
                       layout
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      whileHover={{ y: -5 }}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      whileHover={{ scale: 1.01 }}
                       key={schedule.id}
                       className={cn(
-                        "p-6 rounded-[2rem] border transition-all duration-300 group relative flex flex-col shadow-lg",
-                        isCompleted ? "bg-muted/30 border-border opacity-70" : "glass border-border/80 hover:shadow-2xl hover:border-primary/50"
+                        "p-4 md:p-5 rounded-[1.5rem] border transition-all duration-300 group relative flex flex-col md:flex-row md:items-center gap-4 shadow-lg",
+                        isCompleted ? "bg-muted/30 border-border opacity-70" : "glass border-border/80 hover:shadow-xl hover:border-primary/50"
                       )}
                     >
-                      <div className="absolute left-0 top-0 bottom-0 w-2 rounded-l-[2rem] opacity-90" style={{ backgroundColor: subject?.color || '#cbd5e1' }} />
+                      <div className="absolute left-0 top-0 bottom-0 w-2 rounded-l-[1.5rem] opacity-90" style={{ backgroundColor: subject?.color || '#cbd5e1' }} />
                       
-                      <div className="pl-4 flex-1 flex flex-col">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="text-sm font-bold text-muted-foreground flex flex-wrap items-center gap-2">
-                            <span className="bg-background/80 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-sm border border-border/50">
-                              <Clock className="w-4 h-4 text-primary" /> {schedule.startTime} - {schedule.endTime}
-                            </span>
-                            {schedule.sessionType && (
-                              <span className={cn(
-                                "px-3 py-1.5 rounded-xl border shadow-sm",
-                                schedule.sessionType === 'Revision' ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' :
-                                schedule.sessionType === 'Lecture' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                                schedule.sessionType === 'Practice' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
-                                'bg-primary/10 text-primary border-primary/20'
-                              )}>
-                                {schedule.sessionType}
-                              </span>
-                            )}
-                          </div>
-                          <button 
-                            onClick={() => toggleScheduleStatus(schedule.id, schedule.status)}
-                            className="text-muted-foreground hover:text-primary transition-colors ml-2 hover:scale-110 active:scale-95"
-                          >
-                            {isCompleted ? <CheckCircle2 className="w-8 h-8 text-primary drop-shadow-md" /> : <Circle className="w-8 h-8 opacity-40 hover:opacity-100" />}
-                          </button>
-                        </div>
-                        
-                        <h4 className={cn("font-extrabold text-2xl flex items-center gap-2 mb-2 tracking-tight", isCompleted && "line-through text-muted-foreground")}>
+                      {/* Left: Time and Type */}
+                      <div className="pl-4 md:pl-3 md:w-[200px] shrink-0 flex flex-col items-start gap-2">
+                        <span className="bg-background/80 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-sm border border-border/50 text-sm font-bold text-muted-foreground">
+                          <Clock className="w-4 h-4 text-primary" /> {schedule.startTime} - {schedule.endTime}
+                        </span>
+                        {schedule.sessionType && (
+                          <span className={cn(
+                            "px-3 py-1.5 rounded-xl border shadow-sm text-xs font-bold",
+                            schedule.sessionType === 'Revision' ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' :
+                            schedule.sessionType === 'Lecture' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                            schedule.sessionType === 'Practice' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                            'bg-primary/10 text-primary border-primary/20'
+                          )}>
+                            {schedule.sessionType}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Center: Details */}
+                      <div className="flex-1 flex flex-col pl-4 md:pl-0">
+                        <h4 className={cn("font-extrabold text-xl md:text-2xl flex items-center gap-2 mb-1 tracking-tight", isCompleted && "line-through text-muted-foreground")}>
                           {subject?.name || 'Unknown Subject'}
                         </h4>
                         
                         {schedule.topicId ? (
-                          <div className="text-base font-semibold text-foreground/80 mb-3">
+                          <div className="text-sm md:text-base font-semibold text-foreground/80">
                             <span className="opacity-70">Chapter:</span> {topics.filter(t => t.subjectId === schedule.subjectId).sort((a,b) => a.createdAt - b.createdAt).findIndex(t => t.id === schedule.topicId) + 1}. {topics.find(t => t.id === schedule.topicId)?.title || 'Unknown Topic'}
                           </div>
                         ) : null}
                         
                         {(!schedule.topicId || schedule.taskTitle !== topics.find(t => t.id === schedule.topicId)?.title) && (
-                          <p className={cn("text-lg font-medium mb-6 flex-1 text-foreground/90", isCompleted && "text-muted-foreground")}>
+                          <p className={cn("text-base md:text-lg font-medium text-foreground/90", schedule.topicId && "mt-1", isCompleted && "text-muted-foreground")}>
                             {schedule.taskTitle}
                           </p>
                         )}
+                      </div>
+                      
+                      {/* Right: Actions */}
+                      <div className="flex items-center gap-3 mt-4 md:mt-0 pl-4 md:pl-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                        <Button variant="secondary" size="icon" className="h-10 w-10 rounded-xl" onClick={() => openScheduleModal(schedule)} title="Edit">
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button variant="secondary" size="icon" className="h-10 w-10 rounded-xl" onClick={() => duplicateSchedule(schedule)} title="Duplicate">
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-destructive hover:bg-destructive/10" onClick={() => removeSchedule(schedule.id)} title="Delete">
+                          <Trash2 className="w-5 h-5" />
+                        </Button>
                         
-                        <div className="flex items-center gap-3 mt-auto pt-5 opacity-0 group-hover:opacity-100 transition-opacity border-t border-border/40">
-                          <Button variant="secondary" size="sm" className="h-10 text-sm px-4 rounded-xl font-bold flex-1" onClick={() => openScheduleModal(schedule)}>
-                            <Edit2 className="w-4 h-4 mr-2" /> Edit
-                          </Button>
-                          <Button variant="secondary" size="sm" className="h-10 text-sm px-4 rounded-xl font-bold flex-1" onClick={() => duplicateSchedule(schedule)}>
-                            <Copy className="w-4 h-4 mr-2" /> Duplicate
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-10 w-12 p-0 rounded-xl text-destructive hover:bg-destructive/10" onClick={() => removeSchedule(schedule.id)}>
-                            <Trash2 className="w-5 h-5" />
-                          </Button>
-                        </div>
+                        <div className="w-px h-8 bg-border/50 mx-2 hidden md:block" />
+                        
+                        <button 
+                          onClick={() => toggleScheduleStatus(schedule.id, schedule.status)}
+                          className="text-muted-foreground hover:text-primary transition-colors hover:scale-110 active:scale-95 ml-auto md:ml-0"
+                        >
+                          {isCompleted ? <CheckCircle2 className="w-9 h-9 text-primary drop-shadow-md" /> : <Circle className="w-9 h-9 opacity-40 hover:opacity-100" />}
+                        </button>
                       </div>
                     </motion.div>
                   );
