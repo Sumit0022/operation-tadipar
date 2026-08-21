@@ -14,6 +14,7 @@ import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
+import { TimePicker } from '../components/ui/TimePicker';
 import { cn } from '../utils/cn';
 import type { Schedule } from '../types';
 
@@ -543,19 +544,15 @@ export default function Calendar() {
           )}
           
           <div className="grid grid-cols-2 gap-5">
-            <Input
-              type="time"
+            <TimePicker
               label="Start Time *"
               value={scheduleForm.startTime}
-              onChange={(e) => setScheduleForm({ ...scheduleForm, startTime: e.target.value })}
-              required
+              onChange={(val) => setScheduleForm({ ...scheduleForm, startTime: val })}
             />
-            <Input
-              type="time"
+            <TimePicker
               label="End Time *"
               value={scheduleForm.endTime}
-              onChange={(e) => setScheduleForm({ ...scheduleForm, endTime: e.target.value })}
-              required
+              onChange={(val) => setScheduleForm({ ...scheduleForm, endTime: val })}
             />
           </div>
           
