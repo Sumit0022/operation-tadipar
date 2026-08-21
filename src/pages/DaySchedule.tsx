@@ -141,6 +141,13 @@ export default function DaySchedule() {
     }
   };
 
+  const clearAllSchedules = () => {
+    if (window.confirm('Are you sure you want to delete ALL study sessions for this date? This cannot be undone.')) {
+      dateSchedules.forEach(schedule => deleteSchedule(schedule.id));
+      toast.success('All sessions deleted');
+    }
+  };
+
   const handleHolidaySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!holidayForm.title.trim()) return toast.error('Holiday title is required');
@@ -258,9 +265,14 @@ export default function DaySchedule() {
             <h3 className="text-2xl font-bold">Study Sessions</h3>
             <div className="flex gap-3">
               {dateSchedules.length > 0 && (
-                <Button variant="secondary" onClick={() => setIsCopyModalOpen(true)} className="rounded-xl font-bold shadow-md">
-                  <Copy className="w-4 h-4 mr-2 opacity-70" /> Copy Day
-                </Button>
+                <>
+                  <Button variant="ghost" onClick={clearAllSchedules} className="rounded-xl font-bold text-destructive hover:bg-destructive/10">
+                    <Trash2 className="w-4 h-4 mr-2" /> Clear All
+                  </Button>
+                  <Button variant="secondary" onClick={() => setIsCopyModalOpen(true)} className="rounded-xl font-bold shadow-md">
+                    <Copy className="w-4 h-4 mr-2 opacity-70" /> Copy Day
+                  </Button>
+                </>
               )}
               <Button onClick={() => openScheduleModal()} className="rounded-xl font-bold shadow-md shadow-primary/20">
                 <Plus className="w-5 h-5 mr-1" /> Add Session
