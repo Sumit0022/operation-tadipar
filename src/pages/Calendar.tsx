@@ -44,6 +44,7 @@ export default function Calendar() {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
+  const [isDateDetailsModalOpen, setIsDateDetailsModalOpen] = useState(false);
   const [copyTargetStartDate, setCopyTargetStartDate] = useState('');
   const [copyTargetEndDate, setCopyTargetEndDate] = useState('');
   
@@ -243,7 +244,10 @@ export default function Calendar() {
     return (
       <div 
         key={day.toString()}
-        onClick={() => setSelectedDate(day)}
+        onClick={() => {
+          setSelectedDate(day);
+          setIsDateDetailsModalOpen(true);
+        }}
         className={cn(
           "min-h-[90px] p-2 border-r border-b border-border/40 cursor-pointer transition-all duration-300 relative group",
           !isCurrentMonth && "bg-muted/10 text-muted-foreground",
@@ -299,10 +303,10 @@ export default function Calendar() {
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-8rem)]"
+      className="flex flex-col gap-8 h-[calc(100vh-8rem)] w-full max-w-7xl mx-auto"
     >
       {/* Main Calendar View */}
-      <motion.div variants={itemVariants} className="flex-1 flex flex-col glass rounded-[2.5rem] overflow-hidden shadow-2xl">
+      <motion.div variants={itemVariants} className="flex-1 flex flex-col glass rounded-[2.5rem] overflow-hidden shadow-2xl w-full">
         {/* Calendar Header */}
         <div className="p-5 md:p-8 flex items-center justify-between border-b border-border/50 bg-card/60 backdrop-blur-md z-20">
           <div className="flex items-center gap-6">
@@ -343,173 +347,7 @@ export default function Calendar() {
         </div>
       </motion.div>
 
-      {/* Date Detail View (Right Sidebar) */}
-      <motion.div variants={itemVariants} className="w-full lg:w-96 flex flex-col gap-6 flex-shrink-0">
-        <Card className="flex flex-col h-full bg-card/80 backdrop-blur-3xl shadow-2xl rounded-[2.5rem] p-8 border border-white/20 dark:border-white/10">
-          <div className="mb-8">
-            <h3 className="text-3xl font-extrabold tracking-tight">
-              {format(selectedDate, 'EEEE')}
-            </h3>
-            <p className="text-muted-foreground text-lg mt-1 font-medium">
-              {format(selectedDate, 'd MMMM yyyy')}
-            </p>
-          </div>
 
-          {activeHoliday ? (
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-destructive/10 rounded-[2rem] border border-destructive/20 mb-6 shadow-inner"
-            >
-              <div className="w-16 h-16 bg-destructive/20 text-destructive rounded-3xl flex items-center justify-center mb-4 shadow-lg">
-                <MapPin className="w-8 h-8" />
-              </div>
-              <h4 className="font-bold text-xl text-destructive">{activeHoliday.title}</h4>
-              {activeHoliday.notes && (
-                <p className="text-sm text-destructive/80 mt-2 font-medium">{activeHoliday.notes}</p>
-              )}
-              <Button variant="ghost" size="sm" onClick={removeHoliday} className="mt-6 text-destructive hover:bg-destructive/20 font-bold">
-                Remove Holiday
-              </Button>
-            </motion.div>
-          ) : (
-            <>
-              {/* Progress */}
-              {dateSchedules.length > 0 && (
-                <div className="mb-8">
-                  <div className="flex justify-between text-sm mb-3">
-                    <span className="font-bold tracking-wide">Today's Progress</span>
-                    <span className="font-extrabold text-primary">
-                      {Math.round((dateSchedules.filter(s => s.status === 'Completed').length / dateSchedules.length) * 100)}%
-                    </span>
-                  </div>
-                  <div className="h-3 w-full bg-secondary rounded-full overflow-hidden shadow-inner">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(dateSchedules.filter(s => s.status === 'Completed').length / dateSchedules.length) * 100}%` }}
-                      transition={{ duration: 0.8, type: "spring" }}
-                      className="h-full bg-primary rounded-full relative overflow-hidden"
-                    >
-                      <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]" />
-                    </motion.div>
-                  </div>
-                </div>
-              )}
-
-              {/* Schedules List */}
-              <div className="flex-1 overflow-y-auto space-y-4 -mx-2 px-2 pb-4">
-                {dateSchedules.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-6 opacity-60">
-                    <CalendarIcon className="w-12 h-12 mb-4" />
-                    <p className="text-lg font-semibold">Schedule clear</p>
-                    <p className="text-sm mt-1">Enjoy your day or add a session.</p>
-                  </div>
-                ) : (
-                  <AnimatePresence>
-                    {dateSchedules.map(schedule => {
-                      const subject = subjects.find(s => s.id === schedule.subjectId);
-                      const isCompleted = schedule.status === 'Completed';
-                      
-                      return (
-                        <motion.div 
-                          layout
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          whileHover={{ scale: 1.02 }}
-                          key={schedule.id}
-                          className={cn(
-                            "p-4 rounded-[1.5rem] border transition-all duration-300 group relative",
-                            isCompleted ? "bg-muted/30 border-border opacity-70" : "bg-card border-border/80 shadow-md hover:shadow-xl hover:border-primary/40"
-                          )}
-                        >
-                          <div 
-                            className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-[1.5rem] opacity-80"
-                            style={{ backgroundColor: subject?.color || '#cbd5e1' }}
-                          />
-                          <div className="pl-3">
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="text-xs font-bold text-muted-foreground flex flex-wrap items-center gap-1.5">
-                                <span className="bg-background/50 px-2 py-1 rounded-lg flex items-center gap-1.5">
-                                  <Clock className="w-3.5 h-3.5" />
-                                  {schedule.startTime} - {schedule.endTime}
-                                </span>
-                                {schedule.sessionType && (
-                                  <span className={cn(
-                                    "px-2 py-1 rounded-lg border",
-                                    schedule.sessionType === 'Revision' ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' :
-                                    schedule.sessionType === 'Lecture' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                                    schedule.sessionType === 'Practice' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
-                                    'bg-primary/10 text-primary border-primary/20'
-                                  )}>
-                                    {schedule.sessionType}
-                                  </span>
-                                )}
-                              </div>
-                              <button 
-                                onClick={() => toggleScheduleStatus(schedule.id, schedule.status)}
-                                className="text-muted-foreground hover:text-primary transition-colors ml-2"
-                              >
-                                {isCompleted ? <CheckCircle2 className="w-6 h-6 text-primary drop-shadow-sm" /> : <Circle className="w-6 h-6 opacity-50" />}
-                              </button>
-                            </div>
-                            
-                            <h4 className={cn("font-extrabold text-base flex items-center gap-2", isCompleted && "line-through text-muted-foreground")}>
-                              {subject?.name || 'Unknown Subject'}
-                            </h4>
-                            
-                            {schedule.topicId ? (
-                              <div className="text-sm font-semibold text-foreground/80 mt-1">
-                                Topic: {topics.filter(t => t.subjectId === schedule.subjectId).sort((a,b) => a.createdAt - b.createdAt).findIndex(t => t.id === schedule.topicId) + 1}. {topics.find(t => t.id === schedule.topicId)?.title || 'Unknown Topic'}
-                              </div>
-                            ) : null}
-                            
-                            {(!schedule.topicId || schedule.taskTitle !== topics.find(t => t.id === schedule.topicId)?.title) && (
-                              <p className={cn("text-sm mt-1 font-medium", isCompleted && "text-muted-foreground")}>
-                                {schedule.taskTitle}
-                              </p>
-                            )}
-                            
-                            <div className="flex items-center gap-1.5 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button variant="secondary" size="sm" className="h-7 text-xs px-2.5 rounded-lg" onClick={() => openScheduleModal(schedule)}>
-                                <Edit2 className="w-3 h-3 mr-1.5" /> Edit
-                              </Button>
-                              <Button variant="secondary" size="sm" className="h-7 text-xs px-2.5 rounded-lg" onClick={() => duplicateSchedule(schedule)}>
-                                <Copy className="w-3 h-3 mr-1.5" /> Dup
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-7 text-xs px-2.5 rounded-lg text-destructive hover:bg-destructive/10 ml-auto" onClick={() => removeSchedule(schedule.id)}>
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </AnimatePresence>
-                )}
-              </div>
-            </>
-          )}
-
-          <div className="mt-6 space-y-3 pt-6 border-t border-border/50">
-            <Button size="lg" className="w-full shadow-lg" onClick={() => openScheduleModal()}>
-              <Plus className="w-5 h-5 mr-2" />
-              Add Session
-            </Button>
-            {dateSchedules.length > 0 && (
-              <Button variant="secondary" size="lg" className="w-full" onClick={() => setIsCopyModalOpen(true)}>
-                <Copy className="w-5 h-5 mr-2 opacity-70" />
-                Copy Day's Schedule
-              </Button>
-            )}
-            {!activeHoliday && (
-              <Button variant="ghost" size="lg" className="w-full text-muted-foreground hover:text-destructive font-semibold" onClick={() => setIsHolidayModalOpen(true)}>
-                Mark as Holiday
-              </Button>
-            )}
-          </div>
-        </Card>
-      </motion.div>
 
       {/* Modals */}
       <Modal
@@ -661,7 +499,170 @@ export default function Calendar() {
             <Button type="button" variant="ghost" onClick={() => setIsCopyModalOpen(false)}>Cancel</Button>
             <Button type="submit">Copy Schedule</Button>
           </div>
-        </form>
+      <Modal
+        isOpen={isDateDetailsModalOpen}
+        onClose={() => setIsDateDetailsModalOpen(false)}
+        title={format(selectedDate, 'EEEE, d MMMM yyyy')}
+        className="max-w-[95vw] md:max-w-[80vw] lg:max-w-[70vw] w-full"
+      >
+        <div className="flex flex-col h-[70vh]">
+          {activeHoliday ? (
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-destructive/10 rounded-[2rem] border border-destructive/20 mb-6 shadow-inner"
+            >
+              <div className="w-16 h-16 bg-destructive/20 text-destructive rounded-3xl flex items-center justify-center mb-4 shadow-lg">
+                <MapPin className="w-8 h-8" />
+              </div>
+              <h4 className="font-bold text-xl text-destructive">{activeHoliday.title}</h4>
+              {activeHoliday.notes && (
+                <p className="text-sm text-destructive/80 mt-2 font-medium">{activeHoliday.notes}</p>
+              )}
+              <Button variant="ghost" size="sm" onClick={removeHoliday} className="mt-6 text-destructive hover:bg-destructive/20 font-bold">
+                Remove Holiday
+              </Button>
+            </motion.div>
+          ) : (
+            <>
+              {/* Progress */}
+              {dateSchedules.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex justify-between text-sm mb-3">
+                    <span className="font-bold tracking-wide">Today's Progress</span>
+                    <span className="font-extrabold text-primary">
+                      {Math.round((dateSchedules.filter(s => s.status === 'Completed').length / dateSchedules.length) * 100)}%
+                    </span>
+                  </div>
+                  <div className="h-3 w-full bg-secondary rounded-full overflow-hidden shadow-inner">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(dateSchedules.filter(s => s.status === 'Completed').length / dateSchedules.length) * 100}%` }}
+                      transition={{ duration: 0.8, type: "spring" }}
+                      className="h-full bg-primary rounded-full relative overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]" />
+                    </motion.div>
+                  </div>
+                </div>
+              )}
+
+              {/* Schedules List */}
+              <div className="flex-1 overflow-y-auto space-y-4 -mx-2 px-2 pb-4">
+                {dateSchedules.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6 opacity-60">
+                    <CalendarIcon className="w-16 h-16 mb-4 text-muted-foreground/50" />
+                    <p className="text-xl font-semibold">Schedule clear</p>
+                    <p className="text-base mt-2 text-muted-foreground">Enjoy your day or add a session.</p>
+                  </div>
+                ) : (
+                  <AnimatePresence>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {dateSchedules.map(schedule => {
+                        const subject = subjects.find(s => s.id === schedule.subjectId);
+                        const isCompleted = schedule.status === 'Completed';
+                        
+                        return (
+                          <motion.div 
+                            layout
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            whileHover={{ scale: 1.02 }}
+                            key={schedule.id}
+                            className={cn(
+                              "p-5 rounded-[1.5rem] border transition-all duration-300 group relative flex flex-col",
+                              isCompleted ? "bg-muted/30 border-border opacity-70" : "bg-card border-border/80 shadow-md hover:shadow-xl hover:border-primary/40"
+                            )}
+                          >
+                            <div 
+                              className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-[1.5rem] opacity-80"
+                              style={{ backgroundColor: subject?.color || '#cbd5e1' }}
+                            />
+                            <div className="pl-3 flex-1 flex flex-col">
+                              <div className="flex justify-between items-start mb-3">
+                                <div className="text-xs font-bold text-muted-foreground flex flex-wrap items-center gap-2">
+                                  <span className="bg-background/50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 border border-border/50 shadow-sm">
+                                    <Clock className="w-3.5 h-3.5" />
+                                    {schedule.startTime} - {schedule.endTime}
+                                  </span>
+                                  {schedule.sessionType && (
+                                    <span className={cn(
+                                      "px-2.5 py-1 rounded-lg border shadow-sm",
+                                      schedule.sessionType === 'Revision' ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' :
+                                      schedule.sessionType === 'Lecture' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                      schedule.sessionType === 'Practice' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                      'bg-primary/10 text-primary border-primary/20'
+                                    )}>
+                                      {schedule.sessionType}
+                                    </span>
+                                  )}
+                                </div>
+                                <button 
+                                  onClick={() => toggleScheduleStatus(schedule.id, schedule.status)}
+                                  className="text-muted-foreground hover:text-primary transition-colors ml-2"
+                                >
+                                  {isCompleted ? <CheckCircle2 className="w-7 h-7 text-primary drop-shadow-sm" /> : <Circle className="w-7 h-7 opacity-50" />}
+                                </button>
+                              </div>
+                              
+                              <h4 className={cn("font-extrabold text-lg flex items-center gap-2 mb-1", isCompleted && "line-through text-muted-foreground")}>
+                                {subject?.name || 'Unknown Subject'}
+                              </h4>
+                              
+                              {schedule.topicId ? (
+                                <div className="text-sm font-semibold text-foreground/80 mb-2">
+                                  Topic: {topics.filter(t => t.subjectId === schedule.subjectId).sort((a,b) => a.createdAt - b.createdAt).findIndex(t => t.id === schedule.topicId) + 1}. {topics.find(t => t.id === schedule.topicId)?.title || 'Unknown Topic'}
+                                </div>
+                              ) : null}
+                              
+                              {(!schedule.topicId || schedule.taskTitle !== topics.find(t => t.id === schedule.topicId)?.title) && (
+                                <p className={cn("text-base font-medium mb-4 flex-1", isCompleted && "text-muted-foreground")}>
+                                  {schedule.taskTitle}
+                                </p>
+                              )}
+                              
+                              <div className="flex items-center gap-2 mt-auto pt-4 opacity-0 group-hover:opacity-100 transition-opacity border-t border-border/30">
+                                <Button variant="secondary" size="sm" className="h-8 text-xs px-3 rounded-lg" onClick={() => openScheduleModal(schedule)}>
+                                  <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Edit
+                                </Button>
+                                <Button variant="secondary" size="sm" className="h-8 text-xs px-3 rounded-lg" onClick={() => duplicateSchedule(schedule)}>
+                                  <Copy className="w-3.5 h-3.5 mr-1.5" /> Dup
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-8 text-xs px-3 rounded-lg text-destructive hover:bg-destructive/10 ml-auto" onClick={() => removeSchedule(schedule.id)}>
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </AnimatePresence>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Action Buttons */}
+          <div className="mt-auto space-y-3 pt-6 border-t border-border/50 flex flex-wrap gap-3">
+            <Button size="lg" className="flex-1 shadow-lg" onClick={() => openScheduleModal()}>
+              <Plus className="w-5 h-5 mr-2" />
+              Add Session
+            </Button>
+            {dateSchedules.length > 0 && (
+              <Button variant="secondary" size="lg" className="flex-1" onClick={() => setIsCopyModalOpen(true)}>
+                <Copy className="w-5 h-5 mr-2 opacity-70" />
+                Copy Day's Schedule
+              </Button>
+            )}
+            {!activeHoliday && (
+              <Button variant="ghost" size="lg" className="text-muted-foreground hover:text-destructive font-semibold w-full sm:w-auto" onClick={() => setIsHolidayModalOpen(true)}>
+                Mark Holiday
+              </Button>
+            )}
+          </div>
+        </div>
       </Modal>
     </motion.div>
   );
