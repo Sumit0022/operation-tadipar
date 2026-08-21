@@ -16,7 +16,6 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { TimePicker } from '../components/ui/TimePicker';
-import { DatePicker } from '../components/ui/DatePicker';
 import { DateRangePicker } from '../components/ui/DateRangePicker';
 import { cn } from '../utils/cn';
 import type { Schedule } from '../types';

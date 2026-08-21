@@ -4,7 +4,7 @@ import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-reac
 import { 
   format, parseISO, addMonths, subMonths, startOfMonth, endOfMonth, 
   startOfWeek, endOfWeek, isSameMonth, isSameDay, addDays, isValid, 
-  isWithinInterval, isBefore, isAfter 
+  isWithinInterval, isBefore 
 } from 'date-fns';
 import { cn } from '../../utils/cn';
 import { useSettingsStore } from '../../store/settings';
