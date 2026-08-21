@@ -134,18 +134,40 @@ export default function DaySchedule() {
     setEditingScheduleId(null);
   };
 
+  const [confirmState, setConfirmState] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
+
+  const openConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmState({ isOpen: true, title, message, onConfirm });
+  };
+  const closeConfirm = () => setConfirmState(prev => ({ ...prev, isOpen: false }));
+
   const removeSchedule = (id: string) => {
-    if (window.confirm('Delete this study session?')) {
-      deleteSchedule(id);
-      toast.success('Session deleted');
-    }
+    openConfirm(
+      'Delete Session', 
+      'Are you sure you want to delete this study session?', 
+      () => {
+        deleteSchedule(id);
+        toast.success('Session deleted');
+        closeConfirm();
+      }
+    );
   };
 
   const clearAllSchedules = () => {
-    if (window.confirm('Are you sure you want to delete ALL study sessions for this date? This cannot be undone.')) {
-      dateSchedules.forEach(schedule => deleteSchedule(schedule.id));
-      toast.success('All sessions deleted');
-    }
+    openConfirm(
+      'Clear All Sessions',
+      'Are you sure you want to delete ALL study sessions for this date? This cannot be undone.',
+      () => {
+        dateSchedules.forEach(schedule => deleteSchedule(schedule.id));
+        toast.success('All sessions deleted');
+        closeConfirm();
+      }
+    );
   };
 
   const handleHolidaySubmit = (e: React.FormEvent) => {
@@ -158,9 +180,16 @@ export default function DaySchedule() {
   };
 
   const removeHoliday = () => {
-    if (activeHoliday && window.confirm('Remove this holiday?')) {
-      deleteHoliday(activeHoliday.id);
-      toast.success('Holiday removed');
+    if (activeHoliday) {
+      openConfirm(
+        'Remove Holiday',
+        'Are you sure you want to remove this holiday?',
+        () => {
+          deleteHoliday(activeHoliday.id);
+          toast.success('Holiday removed');
+          closeConfirm();
+        }
+      );
     }
   };
 
@@ -463,6 +492,18 @@ export default function DaySchedule() {
             <Button type="submit">Copy Schedule</Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={confirmState.isOpen} onClose={closeConfirm} title={confirmState.title}>
+        <div className="space-y-6">
+          <p className="text-foreground/90 font-medium leading-relaxed">
+            {confirmState.message}
+          </p>
+          <div className="flex justify-end gap-3 pt-6 border-t border-border/50">
+            <Button type="button" variant="ghost" onClick={closeConfirm}>Cancel</Button>
+            <Button type="button" variant="danger" onClick={confirmState.onConfirm}>Delete</Button>
+          </div>
+        </div>
       </Modal>
 
     </motion.div>
