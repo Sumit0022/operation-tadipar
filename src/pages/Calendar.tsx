@@ -553,6 +553,7 @@ export default function Calendar() {
               label="End Time *"
               value={scheduleForm.endTime}
               onChange={(val) => setScheduleForm({ ...scheduleForm, endTime: val })}
+              align="right"
             />
           </div>
           

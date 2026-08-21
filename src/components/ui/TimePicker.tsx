@@ -7,9 +7,10 @@ interface TimePickerProps {
   label: string;
   value: string; // HH:mm (24-hour format)
   onChange: (value: string) => void;
+  align?: 'left' | 'right' | 'center';
 }
 
-export function TimePicker({ label, value, onChange }: TimePickerProps) {
+export function TimePicker({ label, value, onChange, align = 'left' }: TimePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -149,7 +150,12 @@ export function TimePicker({ label, value, onChange }: TimePickerProps) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="absolute z-50 top-full left-0 mt-2 p-4 rounded-3xl glass border border-white/10 shadow-2xl w-full min-w-[280px]"
+              className={cn(
+                "absolute z-50 top-full mt-2 p-4 rounded-3xl glass border border-white/10 shadow-2xl w-full min-w-[280px]",
+                align === 'left' && "left-0",
+                align === 'right' && "right-0",
+                align === 'center' && "left-1/2 -translate-x-1/2"
+              )}
             >
               {/* Header */}
               <div className="flex justify-center items-baseline gap-2 mb-6">
