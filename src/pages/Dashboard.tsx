@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Circle, Calendar as CalendarIcon, ArrowRight, PlayCircle, Plus } from 'lucide-react';
 import { useAppStore } from '../store';
+import { Play } from 'lucide-react';
 import { useTimerStore } from '../store/timer';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -258,6 +259,35 @@ export default function Dashboard() {
                         <span>{schedule.startTime}</span>
                         <span className="text-xs text-muted-foreground mt-0.5">{schedule.endTime}</span>
                       </div>
+                      
+                      {!isCompleted && (() => {
+                        const [sH, sM] = schedule.startTime.split(':').map(Number);
+                        const [eH, eM] = schedule.endTime.split(':').map(Number);
+                        const currentTotalMinutes = today.getHours() * 60 + today.getMinutes();
+                        const startTotalMinutes = sH * 60 + sM;
+                        const endTotalMinutes = eH * 60 + eM;
+                        const isValid = currentTotalMinutes >= (startTotalMinutes - 10) && currentTotalMinutes <= (endTotalMinutes + 10);
+                        
+                        if (!isValid) return null;
+                        
+                        if (activeSession?.scheduleId === schedule.id) {
+                          return (
+                            <div className="flex-shrink-0 flex items-center justify-center bg-green-500/10 border border-green-500/30 text-green-500 px-3 py-2 rounded-xl text-xs font-bold animate-pulse">
+                              LIVE
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <Button 
+                            onClick={() => useTimerStore.getState().startTimer(schedule)}
+                            className="flex-shrink-0 h-10 px-4 rounded-xl font-bold flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:-translate-y-0.5 transition-all"
+                          >
+                            <Play className="w-4 h-4 fill-current" />
+                          </Button>
+                        );
+                      })()}
+                      
                     </motion.div>
                   );
                 })}
