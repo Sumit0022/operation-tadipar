@@ -61,7 +61,7 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
               </Button>
             </div>
             
-            <div className="overflow-visible flex-1">
+            <div className="overflow-y-auto overflow-x-hidden flex-1 -mx-2 px-2 custom-scrollbar">
               {children}
             </div>
           </motion.div>
