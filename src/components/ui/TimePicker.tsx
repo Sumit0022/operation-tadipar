@@ -37,16 +37,7 @@ export function TimePicker({ label, value, onChange }: TimePickerProps) {
     setMinute(parseInt(m, 10));
   }, [value]);
 
-  // Close when clicking outside
-  useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [isOpen]);
+  // Close when clicking outside - removed because the full-screen backdrop handles this now.
 
   // Update parent when internal state changes
   useEffect(() => {
@@ -143,66 +134,68 @@ export function TimePicker({ label, value, onChange }: TimePickerProps) {
           <Clock className="w-5 h-5 text-muted-foreground" />
         </button>
 
-        <AnimatePresence>
-          {isOpen && createPortal(
-            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                onClick={() => setIsOpen(false)}
-              />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                className="relative z-10 p-6 rounded-3xl glass border border-white/10 shadow-2xl w-full max-w-[320px] bg-background/95"
-              >
-              {/* Header */}
-              <div className="flex justify-center items-baseline gap-2 mb-6">
-                <button 
-                  type="button"
-                  onClick={() => setMode('hour')}
-                  className={cn("text-4xl font-bold transition-colors", mode === 'hour' ? "text-primary" : "text-muted-foreground hover:text-foreground")}
+        {createPortal(
+          <AnimatePresence>
+            {isOpen && (
+              <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                  onClick={() => setIsOpen(false)}
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  className="relative z-10 p-6 rounded-3xl glass border border-white/10 shadow-2xl w-full max-w-[320px] bg-background/95"
                 >
-                  {displayHour}
-                </button>
-                <span className="text-4xl font-bold text-muted-foreground/50">:</span>
-                <button 
-                  type="button"
-                  onClick={() => setMode('minute')}
-                  className={cn("text-4xl font-bold transition-colors", mode === 'minute' ? "text-primary" : "text-muted-foreground hover:text-foreground")}
-                >
-                  {displayMinute}
-                </button>
-                
-                <div className="flex flex-col gap-1 ml-4">
+                {/* Header */}
+                <div className="flex justify-center items-baseline gap-2 mb-6">
                   <button 
                     type="button"
-                    onClick={() => setAmPm('AM')}
-                    className={cn("text-sm font-bold px-2 py-0.5 rounded-md transition-colors", amPm === 'AM' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}
+                    onClick={() => setMode('hour')}
+                    className={cn("text-4xl font-bold transition-colors", mode === 'hour' ? "text-primary" : "text-muted-foreground hover:text-foreground")}
                   >
-                    AM
+                    {displayHour}
                   </button>
+                  <span className="text-4xl font-bold text-muted-foreground/50">:</span>
                   <button 
                     type="button"
-                    onClick={() => setAmPm('PM')}
-                    className={cn("text-sm font-bold px-2 py-0.5 rounded-md transition-colors", amPm === 'PM' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}
+                    onClick={() => setMode('minute')}
+                    className={cn("text-4xl font-bold transition-colors", mode === 'minute' ? "text-primary" : "text-muted-foreground hover:text-foreground")}
                   >
-                    PM
+                    {displayMinute}
                   </button>
+                  
+                  <div className="flex flex-col gap-1 ml-4">
+                    <button 
+                      type="button"
+                      onClick={() => setAmPm('AM')}
+                      className={cn("text-sm font-bold px-2 py-0.5 rounded-md transition-colors", amPm === 'AM' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}
+                    >
+                      AM
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setAmPm('PM')}
+                      className={cn("text-sm font-bold px-2 py-0.5 rounded-md transition-colors", amPm === 'PM' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}
+                    >
+                      PM
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Clock Face */}
-              {renderClockFace()}
-              </motion.div>
-            </div>,
-            document.body
-          )}
-        </AnimatePresence>
+                {/* Clock Face */}
+                {renderClockFace()}
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
       </div>
     </div>
   );
