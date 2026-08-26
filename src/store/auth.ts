@@ -7,6 +7,7 @@ import { useSettingsStore } from './settings';
 
 interface UserProfile {
   username: string;
+  name?: string;
   photoURL?: string;
   createdAt?: number;
 }
@@ -17,6 +18,7 @@ interface AuthState {
   loading: boolean;
   setUser: (user: User | null) => void;
   setProfile: (profile: UserProfile | null) => void;
+  updateProfileData: (data: Partial<UserProfile>) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -26,6 +28,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   loading: true,
   setUser: (user) => set({ user }),
   setProfile: (profile) => set({ profile }),
+  updateProfileData: async (data) => {
+    const { user, profile } = useAuthStore.getState();
+    if (!user || !profile) return;
+    const newProfile = { ...profile, ...data };
+    await setDoc(doc(db, 'users', user.uid), newProfile, { merge: true });
+    set({ profile: newProfile });
+  },
   logout: async () => {
     await signOut(auth);
     set({ user: null, profile: null });
@@ -73,12 +82,18 @@ const setupCloudSync = (uid: string) => {
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     useAuthStore.getState().setUser(user);
-    // Fetch profile
-    const docRef = doc(db, 'users', user.uid);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      useAuthStore.getState().setProfile(docSnap.data() as UserProfile);
-    } else {
+    
+    // Fetch profile with error handling
+    try {
+      const docRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        useAuthStore.getState().setProfile(docSnap.data() as UserProfile);
+      } else {
+        useAuthStore.getState().setProfile({ username: user.displayName || user.email?.split('@')[0] || 'User' });
+      }
+    } catch (e) {
+      console.error("Failed to fetch profile", e);
       useAuthStore.getState().setProfile({ username: user.displayName || user.email?.split('@')[0] || 'User' });
     }
     
