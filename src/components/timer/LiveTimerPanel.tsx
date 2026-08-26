@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, Square, Minimize2, Maximize2, Expand, Shrink } from 'lucide-react';
 import { Player } from '@lottiefiles/react-lottie-player';
@@ -12,6 +13,8 @@ export function LiveTimerPanel() {
   const schedules = useAppStore(state => state.schedules);
   
   const [minimized, setMinimized] = useState(false);
+  const [pipWindow, setPipWindow] = useState<Window | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showStopConfirm, setShowStopConfirm] = useState(false);
@@ -44,7 +47,7 @@ export function LiveTimerPanel() {
     } else {
       lottieRef.current?.pause();
     }
-  }, [isRunning, minimized]); // re-run if minimized changes because unmounting/mounting
+  }, [isRunning, minimized]);
 
   // Listen for fullscreen changes from browser (ESC key)
   useEffect(() => {
@@ -78,24 +81,115 @@ export function LiveTimerPanel() {
     }
   };
 
+  const toggleMinimize = async () => {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen().catch(console.error);
+      setIsFullscreen(false);
+    }
+    
+    // Attempt Document Picture-in-Picture API for OS-level floating widget
+    if ('documentPictureInPicture' in window) {
+      try {
+        const dpip = (window as any).documentPictureInPicture;
+        const pip = await dpip.requestWindow({
+          width: 320,
+          height: 100,
+        });
+        
+        // Copy stylesheets for styling
+        [...document.styleSheets].forEach((sheet) => {
+          try {
+            if (sheet.href) {
+              const link = document.createElement('link');
+              link.rel = 'stylesheet';
+              link.href = sheet.href;
+              pip.document.head.appendChild(link);
+            } else {
+              const cssRules = [...sheet.cssRules].map(rule => rule.cssText).join('');
+              const style = document.createElement('style');
+              style.textContent = cssRules;
+              pip.document.head.appendChild(style);
+            }
+          } catch (e) {
+            if (sheet.href) {
+              const link = document.createElement('link');
+              link.rel = 'stylesheet';
+              link.href = sheet.href;
+              pip.document.head.appendChild(link);
+            }
+          }
+        });
+        
+        // Copy dark mode class
+        if (document.documentElement.classList.contains('dark')) {
+          pip.document.documentElement.classList.add('dark');
+        }
+        
+        pip.document.body.className = "bg-background text-foreground overflow-hidden flex items-center justify-center m-0 p-0 h-full";
+        
+        pip.addEventListener("pagehide", () => {
+           setMinimized(false);
+           setPipWindow(null);
+        });
+
+        setPipWindow(pip);
+        setMinimized(true);
+        return;
+      } catch (err) {
+        console.error("Document PiP failed, falling back to in-browser floating", err);
+      }
+    }
+    
+    // Fallback: in-browser minimize
+    setMinimized(true);
+  };
+
+  const maximizeFromPip = () => {
+    if (pipWindow) {
+      pipWindow.close(); // Triggers pagehide event which unminimizes
+    } else {
+      setMinimized(false);
+    }
+  };
+
+  const MinimizedView = () => (
+    <div 
+      className="glass-panel w-full h-full rounded-none md:rounded-2xl p-4 flex items-center justify-between border-primary/30 bg-background/80 transition-colors cursor-pointer"
+      onClick={() => {
+        if (!isDragging) maximizeFromPip();
+      }}
+    >
+      <div className="flex items-center gap-4 pointer-events-none">
+        <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+        <div>
+          <p className="text-xs font-bold text-muted-foreground line-clamp-1 max-w-[150px]">{schedule.taskTitle}</p>
+          <p className="font-mono font-bold text-lg">{formatTime(elapsed)}</p>
+        </div>
+      </div>
+      <div className="p-2 hover:bg-primary/20 rounded-full transition-colors ml-2 pointer-events-none">
+        <Maximize2 className="w-4 h-4 text-primary" />
+      </div>
+    </div>
+  );
+
   if (minimized) {
+    if (pipWindow) {
+      // OS-Level Picture-in-Picture Widget! Shows up on other tabs and Windows desktop.
+      return createPortal(<MinimizedView />, pipWindow.document.body);
+    }
+
+    // Fallback: In-Browser Draggable Widget
     return (
       <motion.div 
         drag
         dragMomentum={false}
+        onDragStart={() => setIsDragging(true)}
+        onDragEnd={() => setTimeout(() => setIsDragging(false), 100)}
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="fixed bottom-24 right-6 z-50 glass-panel rounded-2xl p-4 shadow-2xl border border-primary/30 flex items-center gap-4 hover:bg-background/80 transition-colors cursor-grab active:cursor-grabbing"
-        onClick={() => setMinimized(false)}
+        className="fixed bottom-24 right-6 z-50 w-72 shadow-2xl rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing border-2 border-primary/20"
       >
-        <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
-        <div className="pointer-events-none">
-          <p className="text-xs font-bold text-muted-foreground line-clamp-1 max-w-[120px]">{schedule.taskTitle}</p>
-          <p className="font-mono font-bold text-lg">{formatTime(elapsed)}</p>
-        </div>
-        <div className="p-2 hover:bg-primary/20 rounded-full transition-colors ml-2 pointer-events-none">
-          <Maximize2 className="w-4 h-4 text-primary" />
-        </div>
+        <MinimizedView />
       </motion.div>
     );
   }
@@ -126,12 +220,9 @@ export function LiveTimerPanel() {
         
         <div className="absolute top-8 left-8 flex gap-4 z-10">
           <button 
-            onClick={() => {
-              if (document.fullscreenElement) document.exitFullscreen();
-              setMinimized(true);
-            }}
+            onClick={toggleMinimize}
             className="w-12 h-12 rounded-full glass flex items-center justify-center text-foreground hover:bg-background/50 transition-colors shadow-lg"
-            title="Minimize"
+            title="Minimize (Picture-in-Picture)"
           >
             <Minimize2 className="w-5 h-5" />
           </button>
@@ -223,6 +314,7 @@ export function LiveTimerPanel() {
           </motion.div>
         </div>
 
+        {/* Custom Confirmation Dialog */}
         <AnimatePresence>
           {showStopConfirm && (
             <motion.div 
@@ -266,8 +358,8 @@ export function LiveTimerPanel() {
             </motion.div>
           )}
         </AnimatePresence>
-
       </motion.div>
     </AnimatePresence>
   );
 }
+
