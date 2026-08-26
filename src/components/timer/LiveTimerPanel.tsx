@@ -152,30 +152,57 @@ export function LiveTimerPanel() {
     }
   };
 
-  const MinimizedView = () => (
+  const PiPView = () => (
     <div 
-      className="glass-panel w-full h-full rounded-none md:rounded-2xl p-4 flex items-center justify-between border-primary/30 bg-background/80 transition-colors cursor-pointer"
+      className="w-screen h-screen bg-background flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group outline-none"
+      onClick={maximizeFromPip}
+    >
+      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundColor: subject.color }} />
+      
+      <div className="flex flex-col items-center z-10 w-full px-4">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse flex-shrink-0 shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
+          <span className="text-sm font-bold text-muted-foreground truncate">{schedule.taskTitle}</span>
+        </div>
+        <p className="font-mono text-5xl font-black tabular-nums tracking-tighter text-foreground drop-shadow-md">
+          {formatTime(elapsed)}
+        </p>
+      </div>
+
+      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-sm z-20">
+        <Maximize2 className="w-8 h-8 text-white mb-2 animate-bounce" />
+        <span className="text-sm font-bold text-white">Return to App</span>
+      </div>
+    </div>
+  );
+
+  const InBrowserWidget = () => (
+    <div 
+      className="glass-panel w-full h-full rounded-2xl p-4 flex items-center justify-between border border-primary/30 bg-background/90 transition-colors shadow-2xl outline-none"
       onClick={() => {
         if (!isDragging) maximizeFromPip();
       }}
     >
-      <div className="flex items-center gap-4 pointer-events-none">
-        <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+      <div className="flex items-center gap-3 pointer-events-none">
+        <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse flex-shrink-0 shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
         <div>
           <p className="text-xs font-bold text-muted-foreground line-clamp-1 max-w-[150px]">{schedule.taskTitle}</p>
-          <p className="font-mono font-bold text-lg">{formatTime(elapsed)}</p>
+          <p className="font-mono font-bold text-lg leading-tight">{formatTime(elapsed)}</p>
         </div>
       </div>
-      <div className="p-2 hover:bg-primary/20 rounded-full transition-colors ml-2 pointer-events-none">
-        <Maximize2 className="w-4 h-4 text-primary" />
+      <div className="p-2 hover:bg-primary/20 rounded-full transition-colors ml-2 pointer-events-none text-primary">
+        <Maximize2 className="w-4 h-4" />
       </div>
     </div>
   );
 
   if (minimized) {
     if (pipWindow) {
-      // OS-Level Picture-in-Picture Widget! Shows up on other tabs and Windows desktop.
-      return createPortal(<MinimizedView />, pipWindow.document.body);
+      // OS-Level Picture-in-Picture Widget
+      pipWindow.document.body.style.margin = '0';
+      pipWindow.document.body.style.padding = '0';
+      pipWindow.document.body.style.overflow = 'hidden';
+      return createPortal(<PiPView />, pipWindow.document.body);
     }
 
     // Fallback: In-Browser Draggable Widget
@@ -187,9 +214,9 @@ export function LiveTimerPanel() {
         onDragEnd={() => setTimeout(() => setIsDragging(false), 100)}
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="fixed bottom-24 right-6 z-50 w-72 shadow-2xl rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing border-2 border-primary/20"
+        className="fixed bottom-24 right-6 z-50 w-[280px] shadow-2xl rounded-2xl cursor-grab active:cursor-grabbing outline-none"
       >
-        <MinimizedView />
+        <InBrowserWidget />
       </motion.div>
     );
   }
