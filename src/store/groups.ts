@@ -16,6 +16,14 @@ interface GroupsState {
 
 const generateInviteCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
+// Helper to prevent hanging on Firestore calls
+const withTimeout = <T>(promise: Promise<T>, ms = 8000): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('Network timeout. Please check your connection.')), ms))
+  ]);
+};
+
 export const useGroupsStore = create<GroupsState>((set, get) => ({
   myGroups: [],
   loading: false,
@@ -26,7 +34,7 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
     set({ loading: true });
     try {
       const q = query(collection(db, 'groups'), where('memberIds', 'array-contains', user.uid));
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await withTimeout(getDocs(q));
       const groups = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Group));
       set({ myGroups: groups });
     } catch (e) {
@@ -52,7 +60,7 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
       createdAt: Date.now()
     };
 
-    await setDoc(newGroupRef, newGroup);
+    await withTimeout(setDoc(newGroupRef, newGroup));
     set(state => ({ myGroups: [...state.myGroups, newGroup] }));
   },
 
@@ -61,7 +69,7 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
     if (!user) throw new Error("Must be logged in");
 
     const groupRef = doc(db, 'groups', groupId);
-    const groupSnap = await getDoc(groupRef);
+    const groupSnap = await withTimeout(getDoc(groupRef));
     if (!groupSnap.exists()) throw new Error("Group not found");
 
     const group = groupSnap.data() as Group;
@@ -78,9 +86,9 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
       }
     }
 
-    await updateDoc(groupRef, {
+    await withTimeout(updateDoc(groupRef, {
       memberIds: arrayUnion(user.uid)
-    });
+    }));
 
     // Refresh groups
     await get().fetchMyGroups();
@@ -91,9 +99,9 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
     if (!user) throw new Error("Must be logged in");
 
     const groupRef = doc(db, 'groups', groupId);
-    await updateDoc(groupRef, {
+    await withTimeout(updateDoc(groupRef, {
       memberIds: arrayRemove(user.uid)
-    });
+    }));
 
     set(state => ({
       myGroups: state.myGroups.filter(g => g.id !== groupId)
@@ -105,13 +113,13 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
     if (!user) throw new Error("Must be logged in");
 
     const groupRef = doc(db, 'groups', groupId);
-    const groupSnap = await getDoc(groupRef);
+    const groupSnap = await withTimeout(getDoc(groupRef));
     if (groupSnap.exists()) {
       const group = groupSnap.data() as Group;
       if (group.ownerId !== user.uid) {
         throw new Error("Only the owner can delete the group");
       }
-      await deleteDoc(groupRef);
+      await withTimeout(deleteDoc(groupRef));
       set(state => ({
         myGroups: state.myGroups.filter(g => g.id !== groupId)
       }));
