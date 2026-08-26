@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { useAuthStore } from './store/auth';
+import { useTimerStore } from './store/timer';
+import { useAppStore } from './store';
 
 import Auth from './pages/Auth';
 import Profile from './pages/Profile';
@@ -15,9 +18,37 @@ import Groups from './pages/Groups';
 import DiscoverGroups from './pages/DiscoverGroups';
 import GroupDetails from './pages/GroupDetails';
 
+const getDurationSeconds = (start: string, end: string) => {
+  const [sH, sM] = start.split(':').map(Number);
+  const [eH, eM] = end.split(':').map(Number);
+  let startT = sH * 60 + sM;
+  let endT = eH * 60 + eM;
+  if (endT < startT) endT += 24 * 60;
+  return (endT - startT) * 60;
+};
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthStore();
   const location = useLocation();
+
+  useEffect(() => {
+    // Global interval to check auto-completion
+    const interval = setInterval(() => {
+      const session = useTimerStore.getState().activeSession;
+      if (session && session.status === 'running') {
+        const schedule = useAppStore.getState().schedules.find(s => s.id === session.scheduleId);
+        if (schedule) {
+          const currentElapsed = Math.floor((Date.now() - session.startTime) / 1000) + session.accumulatedSeconds;
+          const targetDuration = getDurationSeconds(schedule.startTime, schedule.endTime);
+          
+          if (currentElapsed >= targetDuration) {
+            useTimerStore.getState().stopTimer(schedule, true);
+          }
+        }
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (loading) {
     return (

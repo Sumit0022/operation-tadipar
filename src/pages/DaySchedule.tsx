@@ -2,11 +2,12 @@ import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format, parseISO, addDays, subDays, isValid, differenceInDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, CheckCircle2, Circle, Copy, Trash2, Clock, MapPin, Edit2, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, CheckCircle2, Circle, Copy, Trash2, Clock, MapPin, Edit2, ArrowLeft, Play } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import toast from 'react-hot-toast';
 
 import { useAppStore } from '../store';
+import { useTimerStore } from '../store/timer';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
@@ -15,6 +16,17 @@ import { TimePicker } from '../components/ui/TimePicker';
 import { DateRangePicker } from '../components/ui/DateRangePicker';
 import { cn } from '../utils/cn';
 import type { Schedule } from '../types';
+
+const isWithinBuffer = (dateStr: string, startStr: string, endStr: string) => {
+  const [sH, sM] = startStr.split(':').map(Number);
+  const [eH, eM] = endStr.split(':').map(Number);
+  const now = new Date();
+  if (dateStr !== format(now, 'yyyy-MM-dd')) return false;
+  const startTotalMinutes = sH * 60 + sM;
+  const endTotalMinutes = eH * 60 + eM;
+  const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+  return currentTotalMinutes >= (startTotalMinutes - 10) && currentTotalMinutes <= (endTotalMinutes + 10);
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -29,6 +41,7 @@ const itemVariants = {
 export default function DaySchedule() {
   const { date: dateParam } = useParams();
   const navigate = useNavigate();
+  const { startTimer, activeSession } = useTimerStore();
   
   const { subjects, topics, schedules, holidays, addSchedule, updateSchedule, deleteSchedule, addHoliday, deleteHoliday } = useAppStore();
   
@@ -382,7 +395,23 @@ export default function DaySchedule() {
                       
                       {/* Right: Actions */}
                       <div className="flex items-center gap-3 mt-4 md:mt-0 pl-4 md:pl-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                        <Button variant="secondary" size="icon" className="h-10 w-10 rounded-xl" onClick={() => openScheduleModal(schedule)} title="Edit">
+                        
+                          {activeSession?.scheduleId === schedule.id ? (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-500 font-bold text-xs animate-pulse">
+                              <span className="w-2 h-2 rounded-full bg-green-500" /> LIVE
+                            </div>
+                          ) : (
+                            !isCompleted && isWithinBuffer(schedule.date, schedule.startTime, schedule.endTime) && (
+                              <Button 
+                                onClick={() => startTimer(schedule)}
+                                className="h-10 px-4 rounded-xl font-bold flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/20 transition-all hover:-translate-y-0.5"
+                              >
+                                <Play className="w-4 h-4 fill-current" /> Start
+                              </Button>
+                            )
+                          )}
+
+                          <Button variant="secondary" size="icon" className="h-10 w-10 rounded-xl" onClick={() => openScheduleModal(schedule)} title="Edit">
                           <Edit2 className="w-4 h-4" />
                         </Button>
                         <Button variant="secondary" size="icon" className="h-10 w-10 rounded-xl" onClick={() => duplicateSchedule(schedule)} title="Duplicate">

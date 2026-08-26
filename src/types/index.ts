@@ -45,8 +45,18 @@ export interface Schedule {
   notes?: string;
   status: ScheduleStatus;
   priority?: 'Low' | 'Medium' | 'High';
+  actualDurationSeconds?: number; // Track actual time studied
   createdAt: number;
   updatedAt: number;
+}
+
+export interface ActiveSession {
+  scheduleId: string;
+  subjectId: string;
+  taskTitle: string;
+  startTime: number; // Unix timestamp when the timer started/resumed
+  accumulatedSeconds: number; // Time accumulated from previous pause/resume cycles
+  status: 'running' | 'paused';
 }
 
 export interface Holiday {
@@ -67,4 +77,11 @@ export interface Group {
   ownerId: string;
   memberIds: string[];
   createdAt: number;
+}
+export interface UserProfile {
+  username: string;
+  name?: string;
+  photoURL?: string;
+  createdAt?: number;
+  activeSession?: ActiveSession | null;
 }

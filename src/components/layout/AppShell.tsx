@@ -4,6 +4,7 @@ import { BottomNav } from './BottomNav';
 import { Toaster } from 'react-hot-toast';
 import { useSettingsStore } from '../../store/settings';
 import { useEffect } from 'react';
+import { LiveTimerPanel } from '../timer/LiveTimerPanel';
 
 export function AppShell() {
   const { theme } = useSettingsStore();
@@ -29,6 +30,7 @@ export function AppShell() {
         </div>
       </main>
       <BottomNav />
+      <LiveTimerPanel />
       <Toaster 
         position="bottom-center"
         toastOptions={{

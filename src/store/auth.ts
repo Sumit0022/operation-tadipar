@@ -4,13 +4,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { useAppStore } from './index';
 import { useSettingsStore } from './settings';
-
-interface UserProfile {
-  username: string;
-  name?: string;
-  photoURL?: string;
-  createdAt?: number;
-}
+import type { UserProfile } from '../types';
 
 interface AuthState {
   user: User | null;

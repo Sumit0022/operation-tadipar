@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
-import { format, parseISO, isAfter, isBefore, addDays, startOfDay } from 'date-fns';
+import { format, parseISO, isAfter, startOfDay } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Circle, Calendar as CalendarIcon, ArrowRight, PlayCircle, Plus } from 'lucide-react';
 import { useAppStore } from '../store';
+import { useTimerStore } from '../store/timer';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { cn } from '../utils/cn';
@@ -24,6 +25,7 @@ const itemVariants = {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { subjects, topics, schedules, updateSchedule } = useAppStore();
+  const { activeSession, stopTimer } = useTimerStore();
   
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
@@ -33,26 +35,55 @@ export default function Dashboard() {
       .filter(s => s.date === todayStr)
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
   }, [schedules, todayStr]);
-  
-  const completedToday = todaySchedules.filter(s => s.status === 'Completed').length;
-  const totalToday = todaySchedules.length;
-  const progressPercent = totalToday === 0 ? 0 : Math.round((completedToday / totalToday) * 100);
-  
+
   const upcomingSchedules = useMemo(() => {
-    const todayStart = startOfDay(today);
-    const endWindow = addDays(todayStart, 7);
-    
     return schedules
-      .filter(s => {
-        const date = parseISO(s.date);
-        return isAfter(date, todayStart) && isBefore(date, endWindow) && s.date !== todayStr;
-      })
+      .filter(s => isAfter(parseISO(s.date), startOfDay(today)) && s.date !== todayStr)
       .sort((a, b) => {
-        if (a.date !== b.date) return a.date.localeCompare(b.date);
-        return a.startTime.localeCompare(b.startTime);
+        const dateCompare = a.date.localeCompare(b.date);
+        return dateCompare !== 0 ? dateCompare : a.startTime.localeCompare(b.startTime);
       })
-      .slice(0, 5);
-  }, [schedules, today]);
+      .slice(0, 4);
+  }, [schedules, todayStr, today]);
+
+  const progress = useMemo(() => {
+    if (todaySchedules.length === 0) return 0;
+    const completed = todaySchedules.filter(s => s.status === 'Completed').length;
+    return Math.round((completed / todaySchedules.length) * 100);
+  }, [todaySchedules]);
+
+  const scheduledMinutes = useMemo(() => {
+    return todaySchedules.reduce((acc, s) => {
+      const [sH, sM] = s.startTime.split(':').map(Number);
+      const [eH, eM] = s.endTime.split(':').map(Number);
+      let diff = (eH * 60 + eM) - (sH * 60 + sM);
+      if (diff < 0) diff += 24 * 60;
+      return acc + diff;
+    }, 0);
+  }, [todaySchedules]);
+
+  const actualSeconds = useMemo(() => {
+    let total = todaySchedules.reduce((acc, s) => acc + (s.actualDurationSeconds || 0), 0);
+    if (activeSession && activeSession.status === 'running') {
+      const activeSchedule = todaySchedules.find(s => s.id === activeSession.scheduleId);
+      if (activeSchedule) {
+        total += Math.floor((Date.now() - activeSession.startTime) / 1000);
+      }
+    }
+    return total;
+  }, [todaySchedules, activeSession]);
+
+  const formatHrsMins = (totalMinutes: number) => {
+    const h = Math.floor(totalMinutes / 60);
+    const m = Math.floor(totalMinutes % 60);
+    return `${h}h ${m}m`;
+  };
+
+  const formatSecsToHrsMins = (totalSeconds: number) => {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    return `${h}h ${m}m`;
+  };
 
   const toggleScheduleStatus = (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'Pending' ? 'Completed' : 'Pending';
@@ -66,11 +97,27 @@ export default function Dashboard() {
       animate="show"
       className="space-y-8"
     >
-      <motion.header variants={itemVariants} className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Good {format(today, 'a') === 'AM' ? 'Morning' : 'Afternoon'}</h1>
-        <p className="text-muted-foreground mt-2 text-lg">
-          Here's your study overview for {format(today, 'EEEE, d MMMM')}.
-        </p>
+      <motion.header variants={itemVariants} className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Good {format(today, 'a') === 'AM' ? 'Morning' : 'Afternoon'}</h1>
+          <p className="text-muted-foreground mt-2 text-lg">
+            Here's your study overview for {format(today, 'EEEE, d MMMM')}.
+          </p>
+        </div>
+        
+        {activeSession && (
+          <div className="bg-green-500/10 border border-green-500/30 rounded-2xl px-6 py-3 flex items-center gap-4">
+            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+            <div>
+              <p className="text-xs font-bold text-green-500 uppercase tracking-wider">Live Session</p>
+              <p className="font-bold text-foreground line-clamp-1 max-w-[200px]">{activeSession.taskTitle}</p>
+            </div>
+            <Button size="sm" onClick={() => {
+              const sched = schedules.find(s => s.id === activeSession.scheduleId);
+              if (sched) stopTimer(sched);
+            }} variant="danger" className="ml-2 h-8 rounded-lg">Stop</Button>
+          </div>
+        )}
       </motion.header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -79,34 +126,53 @@ export default function Dashboard() {
         <div className="lg:col-span-2 space-y-8">
           
           {/* Progress Card */}
-          <motion.div variants={itemVariants}>
-            <Card className="bg-gradient-to-br from-primary/20 to-primary/5 border-primary/20 shadow-[0_8px_30px_rgba(0,122,255,0.15)] relative overflow-hidden">
+          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="p-6 col-span-1 md:col-span-2 bg-gradient-to-br from-primary/20 to-primary/5 border-primary/20 shadow-[0_8px_30px_rgba(0,122,255,0.15)] relative overflow-hidden">
               <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
               
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 relative z-10">
                 <div>
                   <h2 className="text-xl font-bold">Today's Progress</h2>
                   <p className="text-muted-foreground mt-1 text-base">
-                    {completedToday} of {totalToday} sessions completed
+                    {todaySchedules.filter(s => s.status === 'Completed').length} of {todaySchedules.length} sessions completed
                   </p>
                 </div>
                 <div className="text-5xl font-extrabold text-primary tracking-tighter">
-                  {progressPercent}%
+                  {progress}%
                 </div>
               </div>
               
               <div className="h-4 w-full bg-background/50 rounded-full overflow-hidden backdrop-blur-sm shadow-inner relative z-10">
                 <motion.div 
                   initial={{ width: 0 }}
-                  animate={{ width: `${progressPercent}%` }}
+                  animate={{ width: `${progress}%` }}
                   transition={{ duration: 1, type: "spring" }}
                   className="h-full bg-primary rounded-full relative overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]" />
                 </motion.div>
               </div>
-            </Card>
-          </motion.div>
+              </Card>
+
+              <Card className="p-6 col-span-1 bg-gradient-to-br from-secondary/50 to-background border-border/50 relative overflow-hidden flex flex-col justify-center">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Study Time</h3>
+                <div className="flex items-end gap-2">
+                  <span className="text-3xl font-black text-foreground">{formatSecsToHrsMins(actualSeconds)}</span>
+                </div>
+                <div className="mt-2 text-sm font-medium text-muted-foreground">
+                  / {formatHrsMins(scheduledMinutes)} scheduled
+                </div>
+                
+                {activeSession && (
+                  <div className="mt-4 pt-4 border-t border-border/50">
+                    <div className="flex items-center gap-2 text-green-500 font-bold text-xs uppercase tracking-widest animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-green-500" />
+                      Timer Active
+                    </div>
+                  </div>
+                )}
+              </Card>
+            </motion.div>
 
           {/* Today's Schedule */}
           <motion.div variants={itemVariants}>
@@ -207,7 +273,7 @@ export default function Dashboard() {
           <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
             <Card interactive className="p-6 flex flex-col items-center justify-center text-center">
               <span className="text-muted-foreground text-sm font-bold uppercase tracking-wider mb-2">Pending</span>
-              <span className="text-4xl font-extrabold">{totalToday - completedToday}</span>
+              <span className="text-4xl font-extrabold">{todaySchedules.length - todaySchedules.filter(s => s.status === 'Completed').length}</span>
             </Card>
             <Card interactive className="p-6 flex flex-col items-center justify-center text-center">
               <span className="text-muted-foreground text-sm font-bold uppercase tracking-wider mb-2">Total Hrs</span>

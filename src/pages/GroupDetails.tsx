@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, LogOut, ArrowLeft, Trash2, Shield, Activity, BookOpen, Clock, Lock, Copy, Check } from 'lucide-react';
-import { doc, getDoc } from 'firebase/firestore';
+import { Users, LogOut, ArrowLeft, Trash2, Shield, Activity, BookOpen, Lock, Copy, Check, CalendarDays } from 'lucide-react';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useGroupsStore } from '../store/groups';
 import { useAuthStore } from '../store/auth';
 import { Button } from '../components/ui/Button';
-import type { Group, Schedule } from '../types';
+import type { Group, Schedule, ActiveSession } from '../types';
 import toast from 'react-hot-toast';
 
 const containerVariants = {
@@ -25,8 +25,8 @@ interface MemberData {
   name: string;
   username: string;
   photoURL?: string;
-  currentTask?: Schedule;
-  todaySchedules: Schedule[];
+  activeSession?: ActiveSession | null;
+  attendanceCount: number;
 }
 
 export default function GroupDetails() {
@@ -36,16 +36,24 @@ export default function GroupDetails() {
   const { myGroups, leaveGroup, deleteGroup } = useGroupsStore();
   
   const [group, setGroup] = useState<Group | null>(null);
-  const [members, setMembers] = useState<MemberData[]>([]);
+  const [members, setMembers] = useState<Record<string, MemberData>>({});
   const [loading, setLoading] = useState(true);
   const [leaving, setLeaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
+    // Tick to update live elapsed time for active members
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!id) return;
+    const unsubscribers: (() => void)[] = [];
+
     const fetchGroupAndMembers = async () => {
-      if (!id) return;
       try {
-        // Find group locally first or fetch it
         let g = myGroups.find(g => g.id === id);
         if (!g) {
           const gSnap = await getDoc(doc(db, 'groups', id));
@@ -62,60 +70,53 @@ export default function GroupDetails() {
         
         setGroup(g);
 
-        // Fetch members data
-        const membersData: MemberData[] = [];
-        
-        // Since 'in' queries are limited to 10, we chunk them if needed, but for simplicity, 
-        // we'll fetch them individually since this is a prototype and max members is 50.
-        // In production, we'd use chunks of 10 with 'in'.
-        
-        const todayStr = new Date().toLocaleDateString('en-CA');
-        const now = new Date();
-        const currentTimeString = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-
+        // Set up real-time listener for each member
         for (const uid of g.memberIds) {
-          try {
-            // Profile
-            const profileSnap = await getDoc(doc(db, 'users', uid));
-            const profile = profileSnap.data();
-            
-            // Sync Data
-            const syncSnap = await getDoc(doc(db, 'users', uid, 'data', 'sync'));
-            const syncData = syncSnap.data();
-            
-            const schedules: Schedule[] = syncData?.schedules || [];
-            const todaySchedules = schedules.filter(s => s.date === todayStr);
-            
-            // Current task
-            const currentTask = todaySchedules.find(s => 
-              s.status === 'Pending' && 
-              currentTimeString >= s.startTime && 
-              currentTimeString <= s.endTime
-            );
+          const unsub = onSnapshot(doc(db, 'users', uid), async (profileSnap) => {
+            if (profileSnap.exists()) {
+              const profile = profileSnap.data();
+              
+              // We fetch their sync data once to calculate attendance, it doesn't need to be strictly real-time
+              let attendanceCount = 0;
+              try {
+                const syncSnap = await getDoc(doc(db, 'users', uid, 'data', 'sync'));
+                if (syncSnap.exists()) {
+                  const syncData = syncSnap.data();
+                  const schedules: Schedule[] = syncData.schedules || [];
+                  const uniqueDays = new Set(schedules.filter(s => s.status === 'Completed').map(s => s.date));
+                  attendanceCount = uniqueDays.size;
+                }
+              } catch (e) { }
 
-            membersData.push({
-              uid,
-              name: profile?.name || profile?.username || 'User',
-              username: profile?.username || '',
-              photoURL: profile?.photoURL,
-              currentTask,
-              todaySchedules
-            });
-          } catch (err) {
-            console.error(`Failed to fetch member ${uid}`, err);
-          }
+              setMembers(prev => ({
+                ...prev,
+                [uid]: {
+                  uid,
+                  name: profile.name || profile.username || 'User',
+                  username: profile.username || '',
+                  photoURL: profile.photoURL,
+                  activeSession: profile.activeSession,
+                  attendanceCount
+                }
+              }));
+            }
+          });
+          unsubscribers.push(unsub);
         }
         
-        setMembers(membersData);
+        setLoading(false);
       } catch (error) {
         console.error(error);
         toast.error("Error loading group details");
-      } finally {
         setLoading(false);
       }
     };
     
     fetchGroupAndMembers();
+    
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+    };
   }, [id, myGroups, navigate]);
 
   const handleLeave = async () => {
@@ -164,6 +165,13 @@ export default function GroupDetails() {
 
   const isAdmin = user?.uid === group.ownerId;
   const isMember = user && group.memberIds.includes(user.uid);
+  
+  const memberList = Object.values(members).sort((a, b) => {
+    // Active members first
+    if (a.activeSession && !b.activeSession) return -1;
+    if (!a.activeSession && b.activeSession) return 1;
+    return a.name.localeCompare(b.name);
+  });
 
   return (
     <motion.div 
@@ -251,18 +259,30 @@ export default function GroupDetails() {
       </motion.div>
 
       <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {members.map(member => {
-          const isStudying = !!member.currentTask;
+        {memberList.map(member => {
+          const isStudying = !!member.activeSession;
           
+          let elapsedStr = '';
+          if (isStudying && member.activeSession) {
+            let current = member.activeSession.accumulatedSeconds;
+            if (member.activeSession.status === 'running') {
+              current += Math.floor((now - member.activeSession.startTime) / 1000);
+            }
+            const h = Math.floor(current / 3600);
+            const m = Math.floor((current % 3600) / 60);
+            const s = current % 60;
+            elapsedStr = `${h > 0 ? h + 'h ' : ''}${m}m ${s}s`;
+          }
+
           return (
             <div key={member.uid} className="glass-panel p-6 rounded-3xl relative overflow-hidden flex flex-col group/member">
               {isStudying && (
-                <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-green-400 to-emerald-500" />
+                <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-green-400 to-emerald-500 animate-pulse" />
               )}
               
               <div className="flex items-center gap-4 mb-4">
                 <div className="relative">
-                  <div className={`w-14 h-14 rounded-full p-0.5 ${isStudying ? 'bg-gradient-to-br from-green-400 to-emerald-500' : 'bg-border/50'}`}>
+                  <div className={`w-14 h-14 rounded-full p-0.5 ${isStudying ? 'bg-gradient-to-br from-green-400 to-emerald-500 animate-pulse' : 'bg-border/50'}`}>
                     <div className="w-full h-full bg-card rounded-full flex items-center justify-center overflow-hidden border-2 border-background">
                       {member.photoURL ? (
                         <img src={member.photoURL} alt={member.name} className="w-full h-full object-cover" />
@@ -272,40 +292,45 @@ export default function GroupDetails() {
                     </div>
                   </div>
                   {isStudying && (
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-4 border-card rounded-full" />
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-background rounded-full animate-ping" />
+                  )}
+                  {isStudying && (
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-background rounded-full" />
                   )}
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg line-clamp-1">{member.name}</h3>
-                  <p className="text-sm font-medium text-muted-foreground">@{member.username}</p>
+                
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-lg truncate flex items-center gap-2">
+                    {member.name}
+                    {member.uid === group.ownerId && (
+                      <Shield className="w-4 h-4 text-primary" />
+                    )}
+                  </h3>
+                  <p className="text-sm text-muted-foreground truncate">@{member.username}</p>
                 </div>
               </div>
               
-              <div className="flex-1 bg-background/50 rounded-2xl p-4 border border-border/50">
+              <div className="flex-1 flex flex-col justify-end">
                 {isStudying ? (
-                  <div>
-                    <p className="text-xs font-bold text-green-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" /> Currently Studying
-                    </p>
-                    <p className="font-bold text-foreground line-clamp-1">{member.currentTask?.taskTitle}</p>
-                    <div className="flex items-center gap-2 mt-2 text-sm font-medium text-muted-foreground">
-                      <Clock className="w-4 h-4" /> 
-                      {member.currentTask?.startTime} - {member.currentTask?.endTime}
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-4 mt-2">
+                    <div className="flex items-center gap-2 text-green-500 text-xs font-bold uppercase tracking-wider mb-2">
+                      <Activity className="w-4 h-4" />
+                      Studying Now
                     </div>
+                    <div className="font-semibold text-foreground line-clamp-1">{member.activeSession!.taskTitle}</div>
+                    <div className="text-2xl font-black text-green-500 mt-2 font-mono">{elapsedStr}</div>
                   </div>
                 ) : (
-                  <div className="h-full flex flex-col justify-center items-center text-center opacity-70">
-                    <BookOpen className="w-6 h-6 text-muted-foreground mb-2" />
-                    <p className="text-sm font-medium text-muted-foreground">Not studying currently</p>
+                  <div className="bg-secondary/30 rounded-2xl p-4 mt-2 h-full flex flex-col items-center justify-center text-center">
+                    <BookOpen className="w-6 h-6 text-muted-foreground/50 mb-2" />
+                    <p className="text-sm text-muted-foreground font-medium">Currently inactive</p>
                   </div>
                 )}
               </div>
-              
-              <div className="mt-4 flex items-center justify-between text-sm font-semibold">
-                <span className="text-muted-foreground">Today's Tasks</span>
-                <span className="text-foreground bg-secondary/50 px-3 py-1 rounded-full">
-                  {member.todaySchedules.filter(s => s.status === 'Completed').length} / {member.todaySchedules.length}
-                </span>
+
+              <div className="mt-4 pt-4 border-t border-border/50 flex items-center gap-2">
+                <CalendarDays className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold text-muted-foreground">{member.attendanceCount} study days</span>
               </div>
             </div>
           );

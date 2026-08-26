@@ -1,78 +1,73 @@
-# Groups Feature Implementation Plan
+# Task Stopwatch & Real-Time Study System Implementation Plan
 
-The objective is to implement a comprehensive YPT-inspired Groups feature, enabling users to create, join, and manage study/productivity groups. It will allow viewing of fellow group members' active schedules and tasks, encouraging accountability.
+## Overview
+We will introduce a highly polished, YPT-inspired study stopwatch system. The system integrates tightly with existing date/time scheduling. Users can start a timer within a 10-minute buffer of a scheduled task. The timer persists, auto-completes tasks, and broadcasts real-time presence to group members.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> The groups functionality will rely heavily on Firebase Firestore. To see other members' live schedules, their cloud sync data (`users/{uid}/data/sync`) will be read.
+> The realtime presence requires updating a user's `users/{uid}` document when they start/stop a timer. 
+> To show live updates to group members, we will use Firebase's `onSnapshot` listener on these user documents.
+> We will store actual tracked study time as a new field `actualDurationSeconds` inside the `Schedule` model.
+> Do you approve this data structure?
 
-## Clarifications & Decisions
+## Open Questions
 
-1. **Group Visibility:** When creating a group, the creator will choose if the group is **Public** (discoverable and open to join) or **Private** (requires an invite link or code).
-2. **Data Sharing Scope:** Today's schedule will be shown by default on the group dashboard, but all group members will have the ability to click on a member and view their full public historical schedule/data.
+> [!TIP]
+> 1. Should we limit a user to exactly ONE active timer across the whole app? (Assume yes).
 
 ## Proposed Changes
 
-### Firestore Collections
+### 1. Data Models
+Update `src/types/index.ts`:
+- Update `Schedule` to include `actualDurationSeconds?: number`.
+- Define `ActiveSession`:
+  ```ts
+  export interface ActiveSession {
+    scheduleId: string;
+    subjectId: string;
+    taskTitle: string;
+    startTime: number;
+    accumulatedSeconds: number; // in case of pause/resume
+  }
+  ```
+- Update `UserProfile` in `store/auth.ts` to include `activeSession?: ActiveSession | null`.
 
-We will add a new top-level collection: `groups`.
-Each group document will contain:
-- `id`: unique group ID
-- `name`: string
-- `bio`: string (optional)
-- `photoURL`: string (optional)
-- `isPrivate`: boolean (whether it requires an invite)
-- `inviteCode`: string (6-digit alphanumeric)
-- `ownerId`: user ID of the creator
-- `memberIds`: array of user IDs (max 50)
-- `createdAt`: timestamp
+### 2. State Management (`src/store/timer.ts`)
+Create a new Zustand store to manage the active timer locally:
+- `activeSession: ActiveSession | null`
+- `status: 'idle' | 'running' | 'paused'`
+- `startTimer(schedule: Schedule)`
+- `pauseTimer()`
+- `resumeTimer()`
+- `stopTimer(schedule: Schedule)` (calculates total elapsed, updates Schedule, removes activeSession)
+- Effects: 
+  - Subscribes to changes and updates `users/{uid}` in Firestore for real-time group sync.
+  - Tick interval that checks if scheduled duration is met, triggering auto-complete.
 
-Users' existing data structure:
-- `users/{uid}`
-- `users/{uid}/data/sync`
+### 3. Home Page Integration
+Modify `src/pages/Dashboard.tsx`:
+- Add a "Current Session" widget if a timer is running.
+- Show live elapsed time.
+- Show Today's Scheduled vs Actual Study time.
 
----
+### 4. Schedule/Day View Integration
+Modify `src/pages/DaySchedule.tsx` & components:
+- In the task cards, if current time is within `[start - 10m, end + 10m]`, show a "Start Study" button.
+- If this task is active, show the live animated Stopwatch, Pause, and Stop buttons.
 
-### Core Logic & State Management
+### 5. Group Live View
+Modify `src/pages/GroupDetails.tsx`:
+- Replace the static member schedule fetching with real-time `onSnapshot` listeners on the members' `users/{uid}` documents.
+- If `member.activeSession` exists, display them as "Live Now" with a pulsating green indicator and elapsed time.
 
-#### [NEW] `src/store/groups.ts`
-Zustand store for handling group fetching, joining, creating, and fetching member data.
-- `myGroups: Group[]`
-- `fetchMyGroups()`
-- `createGroup(name, bio, isPrivate)`
-- `joinGroup(groupId, inviteCode?)`
-- `leaveGroup(groupId)`
-- `deleteGroup(groupId)`
-
----
-
-### UI Components & Pages
-
-#### [MODIFY] `src/App.tsx`
-Add routes for `/groups`, `/groups/discover`, and `/groups/:id`.
-
-#### [MODIFY] `src/components/layout/Sidebar.tsx` & `src/components/layout/BottomNav.tsx`
-Add a "Groups" navigation link.
-
-#### [NEW] `src/pages/Groups.tsx`
-The main Groups dashboard showing a "My Groups" list.
-
-#### [NEW] `src/pages/DiscoverGroups.tsx`
-A search page to find public groups or join private ones via invite code.
-
-#### [NEW] `src/pages/GroupDetails.tsx`
-The dashboard for a specific group.
-- **Header**: Group name, bio, settings, invite code (if member).
-- **Members (YPT style)**: A list/grid of members with live "Studying X" indicators.
-
-#### [NEW] `src/components/groups/CreateGroupModal.tsx`
-Modal with:
-- Group Name, Bio
-- Public / Private toggle
+### 6. Timer UI/Animations
+Create a `LiveTimerWidget` component using `framer-motion`:
+- Glassmorphism, smooth digits.
 
 ## Verification Plan
-1. Admin can create a private group.
-2. User can join public groups directly, or private ones with code.
-3. Group limit of 50 members enforced.
-4. YPT-like schedule viewing (current task highlighted, history accessible).
+1. Ensure the timer can be started only within the valid 10-minute buffer window.
+2. Verify that refreshing the page keeps the timer running correctly (by saving `startTime`).
+3. Pause and Resume should correctly tally `accumulatedSeconds`.
+4. Open a second browser with another group member and observe the "Live Now" status appear instantly.
+5. Let the timer reach the scheduled duration and verify it automatically marks the task as 'Completed'.
