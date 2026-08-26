@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -7,10 +8,9 @@ interface TimePickerProps {
   label: string;
   value: string; // HH:mm (24-hour format)
   onChange: (value: string) => void;
-  align?: 'left' | 'right' | 'center';
 }
 
-export function TimePicker({ label, value, onChange, align = 'left' }: TimePickerProps) {
+export function TimePicker({ label, value, onChange }: TimePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -129,7 +129,7 @@ export function TimePicker({ label, value, onChange, align = 'left' }: TimePicke
   };
 
   return (
-    <div className="space-y-1.5" ref={containerRef}>
+    <div className={cn("space-y-1.5 relative", isOpen ? "z-[100]" : "z-10")} ref={containerRef}>
       <label className="text-sm font-semibold text-foreground/80 pl-1">{label}</label>
       <div className="relative">
         <button
@@ -144,19 +144,22 @@ export function TimePicker({ label, value, onChange, align = 'left' }: TimePicke
         </button>
 
         <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className={cn(
-                "absolute z-50 bottom-full mb-2 p-4 rounded-3xl glass border border-white/10 shadow-2xl w-full min-w-[280px]",
-                align === 'left' && "left-0",
-                align === 'right' && "right-0",
-                align === 'center' && "left-1/2 -translate-x-1/2"
-              )}
-            >
+          {isOpen && createPortal(
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={() => setIsOpen(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                className="relative z-10 p-6 rounded-3xl glass border border-white/10 shadow-2xl w-full max-w-[320px] bg-background/95"
+              >
               {/* Header */}
               <div className="flex justify-center items-baseline gap-2 mb-6">
                 <button 
@@ -195,7 +198,9 @@ export function TimePicker({ label, value, onChange, align = 'left' }: TimePicke
 
               {/* Clock Face */}
               {renderClockFace()}
-            </motion.div>
+              </motion.div>
+            </div>,
+            document.body
           )}
         </AnimatePresence>
       </div>

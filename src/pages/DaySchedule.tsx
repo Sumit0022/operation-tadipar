@@ -471,7 +471,7 @@ export default function DaySchedule() {
           
           <div className="grid grid-cols-2 gap-5">
             <TimePicker label="Start Time *" value={scheduleForm.startTime} onChange={(val) => setScheduleForm({ ...scheduleForm, startTime: val })} />
-            <TimePicker label="End Time *" value={scheduleForm.endTime} onChange={(val) => setScheduleForm({ ...scheduleForm, endTime: val })} align="right" />
+            <TimePicker label="End Time *" value={scheduleForm.endTime} onChange={(val) => setScheduleForm({ ...scheduleForm, endTime: val })} />
           </div>
           
           <div className="space-y-2">
