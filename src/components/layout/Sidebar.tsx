@@ -27,8 +27,8 @@ export function Sidebar() {
             <Target className="w-5 h-5 text-primary relative z-10" />
           </div>
           <h1 className="flex flex-col font-black text-xl tracking-tighter uppercase text-foreground/90 leading-tight">
-            <span>Operation</span>
-            <span className="text-primary">Tadipar</span>
+            <span>Track</span>
+            <span className="text-primary">it</span>
           </h1>
         </div>
 
