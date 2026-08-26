@@ -57,3 +57,14 @@ export interface Holiday {
   createdAt: number;
   updatedAt: number;
 }
+export interface Group {
+  id: string;
+  name: string;
+  bio?: string;
+  photoURL?: string;
+  isPrivate: boolean;
+  inviteCode: string;
+  ownerId: string;
+  memberIds: string[];
+  createdAt: number;
+}

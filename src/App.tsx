@@ -11,6 +11,10 @@ import Subjects from './pages/Subjects';
 import SubjectDetails from './pages/SubjectDetails';
 import Settings from './pages/Settings';
 
+import Groups from './pages/Groups';
+import DiscoverGroups from './pages/DiscoverGroups';
+import GroupDetails from './pages/GroupDetails';
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthStore();
   const location = useLocation();
@@ -50,6 +54,10 @@ export default function App() {
           <Route path="subjects/:id" element={<SubjectDetails />} />
           <Route path="settings" element={<Settings />} />
           <Route path="profile" element={<Profile />} />
+          
+          <Route path="groups" element={<Groups />} />
+          <Route path="groups/discover" element={<DiscoverGroups />} />
+          <Route path="groups/:id" element={<GroupDetails />} />
         </Route>
       </Routes>
     </BrowserRouter>

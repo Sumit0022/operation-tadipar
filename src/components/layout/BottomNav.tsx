@@ -1,12 +1,13 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Calendar as CalendarIcon, BookOpen, Settings } from 'lucide-react';
+import { LayoutDashboard, Calendar as CalendarIcon, BookOpen, Settings, UsersRound } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
   { name: 'Calendar', path: '/calendar', icon: CalendarIcon },
   { name: 'Subjects', path: '/subjects', icon: BookOpen },
+  { name: 'Groups', path: '/groups', icon: UsersRound },
   { name: 'Profile', path: '/profile', icon: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];
