@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User as UserIcon, LogOut, Cloud, ShieldCheck, Mail, Edit2, Save, X, Image as ImageIcon } from 'lucide-react';
+import { User as UserIcon, LogOut, Cloud, ShieldCheck, Mail, Edit2, Save, X } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 import { Button } from '../components/ui/Button';
 import toast from 'react-hot-toast';
