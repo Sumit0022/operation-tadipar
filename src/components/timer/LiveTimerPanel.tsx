@@ -14,6 +14,7 @@ export function LiveTimerPanel() {
   const [minimized, setMinimized] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showStopConfirm, setShowStopConfirm] = useState(false);
   const lottieRef = useRef<Player>(null);
 
   useEffect(() => {
@@ -213,12 +214,7 @@ export function LiveTimerPanel() {
             )}
 
             <Button 
-              onClick={() => {
-                if (confirm('Stop the timer and save your session?')) {
-                  if (document.fullscreenElement) document.exitFullscreen();
-                  stopTimer(schedule, false);
-                }
-              }} 
+              onClick={() => setShowStopConfirm(true)} 
               variant="danger"
               className="w-24 h-24 rounded-[2.5rem] flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.3)] hover:scale-105 transition-all"
             >
@@ -226,6 +222,51 @@ export function LiveTimerPanel() {
             </Button>
           </motion.div>
         </div>
+
+        <AnimatePresence>
+          {showStopConfirm && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <motion.div 
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="glass-panel w-full max-w-sm rounded-[2rem] p-8 flex flex-col items-center text-center shadow-2xl border border-white/10"
+              >
+                <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-6">
+                  <Square className="w-8 h-8 text-red-500 fill-current" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2">Stop Session?</h3>
+                <p className="text-muted-foreground mb-8">Are you sure you want to stop the timer and save this session?</p>
+                <div className="flex w-full gap-4">
+                  <Button 
+                    variant="ghost" 
+                    className="flex-1 h-12 rounded-xl"
+                    onClick={() => setShowStopConfirm(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="danger" 
+                    className="flex-1 h-12 rounded-xl bg-red-500 hover:bg-red-600 text-white"
+                    onClick={() => {
+                      setShowStopConfirm(false);
+                      if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+                      stopTimer(schedule, false);
+                    }}
+                  >
+                    Stop & Save
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
       </motion.div>
     </AnimatePresence>
   );
