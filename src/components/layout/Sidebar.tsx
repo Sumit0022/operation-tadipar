@@ -62,6 +62,24 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        <div className="p-4 mt-auto">
+          <NavLink
+            to="/profile"
+            className={cn(
+              'flex items-center gap-3 p-3 rounded-2xl transition-all duration-300 group relative bg-background/40 hover:bg-background/60 border border-border/50',
+              location.pathname === '/profile' && 'ring-2 ring-primary/50'
+            )}
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-bold overflow-hidden border border-primary/20">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-sm font-bold truncate">Profile</p>
+              <p className="text-xs text-muted-foreground truncate">Cloud Sync</p>
+            </div>
+          </NavLink>
+        </div>
       </motion.div>
     </aside>
   );
