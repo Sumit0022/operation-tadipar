@@ -9,119 +9,114 @@ import { Button } from '../ui/Button';
 /* ─── SVG Study Scene ─────────────────────────────────────────────── */
 function StudyIllustration({ isRunning, color }: { isRunning: boolean; color: string }) {
   return (
-    <svg viewBox="0 0 400 320" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full max-w-[340px] mx-auto select-none">
-      {/* Desk */}
-      <motion.rect x="60" y="230" width="280" height="12" rx="6" fill="currentColor" className="text-amber-800/40 dark:text-amber-700/30"
-        initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.8, ease: 'easeOut' }}
+    <svg viewBox="0 0 360 300" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full max-w-[320px] mx-auto select-none" aria-hidden="true">
+      {/* ── Desk Surface ── */}
+      <motion.path d="M40 220 H320 Q325 220 325 225 V228 Q325 232 320 232 H40 Q35 232 35 228 V225 Q35 220 40 220Z"
+        fill="currentColor" className="text-amber-800/25 dark:text-amber-600/15"
+        initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.7, ease: 'easeOut' }}
       />
-      <motion.rect x="90" y="242" width="8" height="50" rx="4" fill="currentColor" className="text-amber-900/30 dark:text-amber-800/20"
-        initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ duration: 0.6, delay: 0.3 }}
-      />
-      <motion.rect x="302" y="242" width="8" height="50" rx="4" fill="currentColor" className="text-amber-900/30 dark:text-amber-800/20"
-        initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ duration: 0.6, delay: 0.3 }}
-      />
+      {/* Desk legs */}
+      <rect x="70" y="232" width="6" height="45" rx="3" fill="currentColor" className="text-amber-900/15 dark:text-amber-700/10" />
+      <rect x="284" y="232" width="6" height="45" rx="3" fill="currentColor" className="text-amber-900/15 dark:text-amber-700/10" />
 
-      {/* Stack of Books (left side) */}
-      <motion.g initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.4, duration: 0.6 }}>
-        <rect x="80" y="206" width="60" height="10" rx="2" fill={color} opacity="0.7" />
-        <rect x="78" y="196" width="64" height="10" rx="2" fill={color} opacity="0.5" />
-        <rect x="82" y="186" width="56" height="10" rx="2" fill={color} opacity="0.35" />
+      {/* ── Book Stack (left) ── */}
+      <motion.g initial={{ y: 15, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5, duration: 0.5 }}>
+        <rect x="55" y="203" width="52" height="8" rx="2" fill={color} opacity="0.5" />
+        <rect x="53" y="195" width="56" height="8" rx="2" fill={color} opacity="0.35" />
+        <rect x="57" y="187" width="48" height="8" rx="2" fill={color} opacity="0.22" />
       </motion.g>
 
-      {/* Open Book (center) */}
-      <motion.g initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5, duration: 0.6 }}>
-        {/* Book spine */}
-        <ellipse cx="220" cy="224" rx="60" ry="4" fill="currentColor" className="text-muted-foreground/10" />
+      {/* ── Open Notebook (center of desk) ── */}
+      <motion.g initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.6, duration: 0.5 }}>
         {/* Left page */}
-        <motion.path d="M220 210 Q190 205 160 215 L160 228 Q190 218 220 223 Z" fill="currentColor" className="text-foreground/10"
-          animate={isRunning ? { d: ["M220 210 Q190 205 160 215 L160 228 Q190 218 220 223 Z", "M220 210 Q190 203 160 213 L160 226 Q190 216 220 223 Z", "M220 210 Q190 205 160 215 L160 228 Q190 218 220 223 Z"] } : {}}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-        />
+        <path d="M150 218 Q150 208 160 206 L188 206 L188 218 Z" fill="currentColor" className="text-foreground/8" />
         {/* Right page */}
-        <motion.path d="M220 210 Q250 205 280 215 L280 228 Q250 218 220 223 Z" fill="currentColor" className="text-foreground/10"
-          animate={isRunning ? { d: ["M220 210 Q250 205 280 215 L280 228 Q250 218 220 223 Z", "M220 210 Q250 207 280 217 L280 230 Q250 220 220 223 Z", "M220 210 Q250 205 280 215 L280 228 Q250 218 220 223 Z"] } : {}}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-        />
-        {/* Page lines */}
-        <line x1="175" y1="218" x2="210" y2="215" stroke="currentColor" className="text-foreground/5" strokeWidth="1.5" />
-        <line x1="175" y1="222" x2="210" y2="219" stroke="currentColor" className="text-foreground/5" strokeWidth="1.5" />
-        <line x1="230" y1="215" x2="265" y2="218" stroke="currentColor" className="text-foreground/5" strokeWidth="1.5" />
-        <line x1="230" y1="219" x2="265" y2="222" stroke="currentColor" className="text-foreground/5" strokeWidth="1.5" />
+        <path d="M188 218 L188 206 L216 206 Q226 208 226 218 Z" fill="currentColor" className="text-foreground/6" />
+        {/* Spine line */}
+        <line x1="188" y1="205" x2="188" y2="218" stroke="currentColor" className="text-foreground/10" strokeWidth="0.8" />
+        {/* Page lines left */}
+        <line x1="158" y1="210" x2="183" y2="210" stroke="currentColor" className="text-foreground/5" strokeWidth="1" />
+        <line x1="158" y1="214" x2="180" y2="214" stroke="currentColor" className="text-foreground/4" strokeWidth="1" />
+        {/* Page lines right */}
+        <line x1="193" y1="210" x2="218" y2="210" stroke="currentColor" className="text-foreground/5" strokeWidth="1" />
+        <line x1="193" y1="214" x2="215" y2="214" stroke="currentColor" className="text-foreground/4" strokeWidth="1" />
       </motion.g>
 
-      {/* Pen */}
-      <motion.g initial={{ rotate: -30, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} transition={{ delay: 0.7, duration: 0.5 }}>
-        <line x1="290" y1="228" x2="320" y2="198" stroke={color} strokeWidth="3" strokeLinecap="round" opacity="0.6" />
-        <circle cx="321" cy="197" r="2" fill={color} opacity="0.8" />
+      {/* ── Pen ── */}
+      <motion.g initial={{ opacity: 0, rotate: -20 }} animate={{ opacity: 1, rotate: 0 }} transition={{ delay: 0.7 }}>
+        <line x1="235" y1="218" x2="255" y2="196" stroke={color} strokeWidth="2.5" strokeLinecap="round" opacity="0.4" />
+        <circle cx="256" cy="195" r="1.5" fill={color} opacity="0.5" />
       </motion.g>
 
-      {/* Coffee Cup / Chai (right side) */}
-      <motion.g initial={{ y: 15, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.6, duration: 0.5 }}>
-        <rect x="300" y="202" width="22" height="28" rx="4" fill="currentColor" className="text-muted-foreground/15" />
-        <rect x="300" y="202" width="22" height="6" rx="3" fill="currentColor" className="text-muted-foreground/20" />
+      {/* ── Cup ── */}
+      <motion.g initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.65 }}>
+        <path d="M270 200 L272 218 L290 218 L292 200 Z" fill="currentColor" className="text-muted-foreground/12" rx="2" />
+        <rect x="269" y="198" width="24" height="4" rx="2" fill="currentColor" className="text-muted-foreground/15" />
         {/* Handle */}
-        <path d="M322 210 Q330 210 330 218 Q330 226 322 226" stroke="currentColor" className="text-muted-foreground/15" strokeWidth="2.5" fill="none" />
+        <path d="M292 204 Q300 204 300 210 Q300 216 292 216" stroke="currentColor" className="text-muted-foreground/10" strokeWidth="2" fill="none" />
         {/* Steam */}
-        <motion.path d="M308 198 Q310 192 308 186" stroke="currentColor" className="text-muted-foreground/15" strokeWidth="1.5" fill="none" strokeLinecap="round"
-          animate={isRunning ? { d: ["M308 198 Q310 192 308 186", "M308 198 Q306 191 308 184", "M308 198 Q310 192 308 186"], opacity: [0.15, 0.25, 0.15] } : { opacity: 0.1 }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        <motion.path d="M278 195 Q280 189 278 183" stroke="currentColor" className="text-muted-foreground/10" strokeWidth="1.2" fill="none" strokeLinecap="round"
+          animate={isRunning ? { opacity: [0.06, 0.15, 0.06], y: [0, -2, 0] } : { opacity: 0.05 }}
+          transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
         />
-        <motion.path d="M314 198 Q316 191 314 184" stroke="currentColor" className="text-muted-foreground/15" strokeWidth="1.5" fill="none" strokeLinecap="round"
-          animate={isRunning ? { d: ["M314 198 Q316 191 314 184", "M314 198 Q312 190 314 182", "M314 198 Q316 191 314 184"], opacity: [0.1, 0.2, 0.1] } : { opacity: 0.08 }}
-          transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
+        <motion.path d="M283 194 Q285 187 283 181" stroke="currentColor" className="text-muted-foreground/10" strokeWidth="1.2" fill="none" strokeLinecap="round"
+          animate={isRunning ? { opacity: [0.04, 0.12, 0.04], y: [0, -3, 0] } : { opacity: 0.04 }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
         />
       </motion.g>
 
-      {/* Student figure (center, sitting at desk) */}
-      <motion.g initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, type: 'spring', damping: 15 }}>
-        {/* Body / Torso */}
-        <motion.path d="M200 160 Q200 180 190 210 L250 210 Q240 180 240 160 Z" fill={color} opacity="0.25"
-          animate={isRunning ? { d: ["M200 160 Q200 180 190 210 L250 210 Q240 180 240 160 Z", "M200 158 Q200 178 190 210 L250 210 Q240 178 240 158 Z", "M200 160 Q200 180 190 210 L250 210 Q240 180 240 160 Z"] } : {}}
-          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        {/* Shoulders */}
-        <motion.path d="M185 165 Q200 155 220 150 Q240 155 255 165" stroke={color} strokeWidth="3" fill="none" opacity="0.3"
-          animate={isRunning ? { d: ["M185 165 Q200 155 220 150 Q240 155 255 165", "M185 163 Q200 153 220 148 Q240 153 255 163", "M185 165 Q200 155 220 150 Q240 155 255 165"] } : {}}
-          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-        />
+      {/* ── Student Silhouette ── */}
+      <motion.g initial={{ y: 25, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, type: 'spring', damping: 18 }}>
         {/* Head */}
-        <motion.circle cx="220" cy="130" r="25" fill={color} opacity="0.3"
-          animate={isRunning ? { cy: [130, 128, 130] } : {}}
+        <motion.ellipse cx="188" cy="118" rx="20" ry="22" fill={color} opacity="0.22"
+          animate={isRunning ? { cy: [118, 116, 118] } : {}}
           transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
         />
         {/* Hair */}
-        <motion.path d="M195 125 Q195 105 220 100 Q245 105 245 125" fill={color} opacity="0.4"
-          animate={isRunning ? { d: ["M195 125 Q195 105 220 100 Q245 105 245 125", "M195 123 Q195 103 220 98 Q245 103 245 123", "M195 125 Q195 105 220 100 Q245 105 245 125"] } : {}}
+        <motion.path d="M168 114 Q168 95 188 90 Q208 95 208 114" fill={color} opacity="0.3"
+          animate={isRunning ? { d: ["M168 114 Q168 95 188 90 Q208 95 208 114", "M168 112 Q168 93 188 88 Q208 93 208 112", "M168 114 Q168 95 188 90 Q208 95 208 114"] } : {}}
           transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
         />
-        {/* Left arm (resting on book) */}
-        <motion.path d="M195 175 Q180 190 185 215" stroke={color} strokeWidth="4" fill="none" opacity="0.25" strokeLinecap="round"
-          animate={isRunning ? { d: ["M195 175 Q180 190 185 215", "M195 173 Q178 190 183 215", "M195 175 Q180 190 185 215"] } : {}}
+
+        {/* Neck */}
+        <motion.rect x="183" y="138" width="10" height="8" rx="5" fill={color} opacity="0.18"
+          animate={isRunning ? { y: [138, 136, 138] } : {}}
           transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
         />
-        {/* Right arm (writing/reading) */}
-        <motion.path d="M245 175 Q260 190 255 215" stroke={color} strokeWidth="4" fill="none" opacity="0.25" strokeLinecap="round"
-          animate={isRunning ? { d: ["M245 175 Q260 190 255 215", "M245 173 Q262 188 257 215", "M245 175 Q260 190 255 215"] } : {}}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+
+        {/* Torso - smooth curved shape */}
+        <motion.path d="M160 160 Q162 148 188 145 Q214 148 216 160 L218 205 Q218 212 210 212 L166 212 Q158 212 158 205 Z"
+          fill={color} opacity="0.16"
+          animate={isRunning ? {
+            d: ["M160 160 Q162 148 188 145 Q214 148 216 160 L218 205 Q218 212 210 212 L166 212 Q158 212 158 205 Z",
+                "M160 158 Q162 146 188 143 Q214 146 216 158 L218 205 Q218 212 210 212 L166 212 Q158 212 158 205 Z",
+                "M160 160 Q162 148 188 145 Q214 148 216 160 L218 205 Q218 212 210 212 L166 212 Q158 212 158 205 Z"]
+          } : {}}
+          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+        />
+
+        {/* Left arm - reaching to notebook */}
+        <motion.path d="M163 165 Q148 180 152 200 Q154 210 160 215" stroke={color} strokeWidth="5" fill="none" opacity="0.15" strokeLinecap="round"
+          animate={isRunning ? { d: ["M163 165 Q148 180 152 200 Q154 210 160 215", "M163 163 Q146 178 150 200 Q152 210 158 215", "M163 165 Q148 180 152 200 Q154 210 160 215"] } : {}}
+          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+        />
+
+        {/* Right arm - writing/reading */}
+        <motion.path d="M213 165 Q228 178 225 200 Q223 210 218 215" stroke={color} strokeWidth="5" fill="none" opacity="0.15" strokeLinecap="round"
+          animate={isRunning ? { d: ["M213 165 Q228 178 225 200 Q223 210 218 215", "M213 163 Q230 176 227 200 Q225 210 220 215", "M213 165 Q228 178 225 200 Q223 210 218 215"] } : {}}
+          transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
         />
       </motion.g>
 
-      {/* Subtle Ambient Particles (only when running) */}
-      {isRunning && (
-        <g>
-          {[...Array(5)].map((_, i) => (
-            <motion.circle key={i}
-              cx={120 + i * 50}
-              cy={100 + (i % 3) * 30}
-              r="1.5"
-              fill={color}
-              opacity={0.15}
-              animate={{ cy: [100 + (i % 3) * 30, 80 + (i % 3) * 30, 100 + (i % 3) * 30], opacity: [0.05, 0.2, 0.05] }}
-              transition={{ duration: 4 + i * 0.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.3 }}
-            />
-          ))}
-        </g>
-      )}
+      {/* ── Subtle floating particles when studying ── */}
+      {isRunning && [...Array(4)].map((_, i) => (
+        <motion.circle key={i}
+          cx={130 + i * 40} cy={80 + (i % 2) * 20} r="1.5"
+          fill={color} opacity={0.1}
+          animate={{ cy: [80 + (i % 2) * 20, 65 + (i % 2) * 20, 80 + (i % 2) * 20], opacity: [0.04, 0.14, 0.04] }}
+          transition={{ duration: 5 + i, repeat: Infinity, ease: 'easeInOut', delay: i * 0.5 }}
+        />
+      ))}
     </svg>
   );
 }
@@ -305,27 +300,22 @@ export function LiveTimerPanel() {
   /* ─── PiP View ────────────────────────────────────────────────── */
   const PiPView = () => (
     <div
-      className="w-screen h-screen bg-background flex items-center cursor-pointer relative overflow-hidden group"
+      className="w-screen h-screen bg-background flex items-center justify-center cursor-pointer relative overflow-hidden group"
       onClick={maximizeFromPip}
     >
-      <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundColor: subject.color }} />
+      {/* Timer only */}
+      <p className="font-mono text-5xl font-black tabular-nums tracking-tighter text-foreground z-10">
+        {formatTime(elapsed)}
+      </p>
 
       {/* Progress bar at bottom */}
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-border/20">
+      <div className="absolute bottom-0 left-0 w-full h-1.5 bg-border/20">
         <div className="h-full transition-all duration-1000 ease-linear rounded-r-full" style={{ width: `${progress * 100}%`, backgroundColor: subject.color }} />
       </div>
 
-      <div className="flex items-center gap-4 px-5 w-full z-10">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 shadow-md" style={{ backgroundColor: subject.color }}>
-          <span className="text-white">{subject.icon}</span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-muted-foreground truncate">{subject.name} · {schedule.taskTitle}</p>
-          <p className="font-mono text-3xl font-black tabular-nums tracking-tighter text-foreground">{formatTime(elapsed)}</p>
-        </div>
-        <div className="flex items-center gap-1 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-          <Maximize2 className="w-5 h-5" />
-        </div>
+      {/* Hover overlay */}
+      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+        <Maximize2 className="w-6 h-6 text-white" />
       </div>
     </div>
   );
