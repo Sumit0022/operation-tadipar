@@ -86,8 +86,11 @@ onAuthStateChanged(auth, async (user) => {
     // Fetch profile with error handling
     try {
       const docRef = doc(db, 'users', user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
+      const fetchPromise = getDoc(docRef);
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout fetching profile')), 5000));
+      const docSnap = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      
+      if (docSnap && docSnap.exists()) {
         useAuthStore.getState().setProfile(docSnap.data() as UserProfile);
       } else {
         useAuthStore.getState().setProfile({ username: user.displayName || user.email?.split('@')[0] || 'User' });
@@ -100,8 +103,16 @@ onAuthStateChanged(auth, async (user) => {
     // Fetch user data
     try {
       const dataRef = doc(db, 'users', user.uid, 'data', 'sync');
-      const dataSnap = await getDoc(dataRef);
-      if (dataSnap.exists()) {
+      
+      // Implement a timeout for getDoc to prevent hanging
+      const fetchPromise = getDoc(dataRef);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout fetching data')), 8000)
+      );
+      
+      const dataSnap = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      
+      if (dataSnap && dataSnap.exists()) {
         const data = dataSnap.data();
         useAppStore.getState().importData({
           subjects: data.subjects || [],
@@ -118,6 +129,8 @@ onAuthStateChanged(auth, async (user) => {
       setupCloudSync(user.uid);
     } catch (e) {
       console.error("Failed to load user data from cloud", e);
+      // Even if it fails, we should start syncing their local data up
+      setupCloudSync(user.uid);
     }
   } else {
     useAuthStore.getState().setUser(null);
@@ -125,3 +138,10 @@ onAuthStateChanged(auth, async (user) => {
   }
   useAuthStore.setState({ loading: false });
 });
+
+// Fallback to ensure loading is never stuck indefinitely
+setTimeout(() => {
+  if (useAuthStore.getState().loading) {
+    useAuthStore.setState({ loading: false });
+  }
+}, 10000);
