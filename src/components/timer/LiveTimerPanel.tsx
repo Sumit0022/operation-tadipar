@@ -84,20 +84,17 @@ export function LiveTimerPanel() {
         dragMomentum={false}
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="fixed bottom-24 right-6 z-50 glass-panel rounded-2xl p-4 shadow-2xl border border-primary/30 flex items-center gap-4 cursor-pointer hover:bg-background/80 transition-colors cursor-grab active:cursor-grabbing"
-        onPointerDown={() => {
-          // Allow dragging without immediately triggering the click if it's a drag
-          // We can just rely on framer-motion's default behavior, but to be safe:
-        }}
+        className="fixed bottom-24 right-6 z-50 glass-panel rounded-2xl p-4 shadow-2xl border border-primary/30 flex items-center gap-4 hover:bg-background/80 transition-colors cursor-grab active:cursor-grabbing"
+        onClick={() => setMinimized(false)}
       >
-        <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-        <div onClick={() => setMinimized(false)}>
+        <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+        <div className="pointer-events-none">
           <p className="text-xs font-bold text-muted-foreground line-clamp-1 max-w-[120px]">{schedule.taskTitle}</p>
           <p className="font-mono font-bold text-lg">{formatTime(elapsed)}</p>
         </div>
-        <button onClick={() => setMinimized(false)} className="p-2 hover:bg-primary/20 rounded-full transition-colors ml-2">
+        <div className="p-2 hover:bg-primary/20 rounded-full transition-colors ml-2 pointer-events-none">
           <Maximize2 className="w-4 h-4 text-primary" />
-        </button>
+        </div>
       </motion.div>
     );
   }
