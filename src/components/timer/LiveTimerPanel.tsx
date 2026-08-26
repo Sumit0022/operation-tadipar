@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Square, Minimize2, Maximize2 } from 'lucide-react';
+import { Play, Pause, Square, Minimize2, Maximize2, Expand, Shrink } from 'lucide-react';
+import { Player } from '@lottiefiles/react-lottie-player';
 import { useTimerStore } from '../../store/timer';
 import { useAppStore } from '../../store';
 import { Button } from '../ui/Button';
@@ -12,6 +13,8 @@ export function LiveTimerPanel() {
   
   const [minimized, setMinimized] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const lottieRef = useRef<Player>(null);
 
   useEffect(() => {
     if (!activeSession) return;
@@ -31,6 +34,26 @@ export function LiveTimerPanel() {
     return () => clearInterval(interval);
   }, [activeSession]);
 
+  const isRunning = activeSession?.status === 'running';
+
+  // Control Lottie playback based on timer status
+  useEffect(() => {
+    if (isRunning) {
+      lottieRef.current?.play();
+    } else {
+      lottieRef.current?.pause();
+    }
+  }, [isRunning, minimized]); // re-run if minimized changes because unmounting/mounting
+
+  // Listen for fullscreen changes from browser (ESC key)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
   if (!activeSession) return null;
 
   const schedule = schedules.find(s => s.id === activeSession.scheduleId);
@@ -44,22 +67,37 @@ export function LiveTimerPanel() {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const isRunning = activeSession.status === 'running';
+  const toggleFullscreen = async () => {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen().catch(err => console.error(err));
+      setIsFullscreen(true);
+    } else {
+      await document.exitFullscreen().catch(err => console.error(err));
+      setIsFullscreen(false);
+    }
+  };
 
   if (minimized) {
     return (
       <motion.div 
+        drag
+        dragMomentum={false}
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="fixed bottom-24 right-6 z-50 glass-panel rounded-2xl p-4 shadow-2xl border border-primary/30 flex items-center gap-4 cursor-pointer hover:bg-background/80 transition-colors"
-        onClick={() => setMinimized(false)}
+        className="fixed bottom-24 right-6 z-50 glass-panel rounded-2xl p-4 shadow-2xl border border-primary/30 flex items-center gap-4 cursor-pointer hover:bg-background/80 transition-colors cursor-grab active:cursor-grabbing"
+        onPointerDown={() => {
+          // Allow dragging without immediately triggering the click if it's a drag
+          // We can just rely on framer-motion's default behavior, but to be safe:
+        }}
       >
         <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-        <div>
+        <div onClick={() => setMinimized(false)}>
           <p className="text-xs font-bold text-muted-foreground line-clamp-1 max-w-[120px]">{schedule.taskTitle}</p>
           <p className="font-mono font-bold text-lg">{formatTime(elapsed)}</p>
         </div>
-        <Maximize2 className="w-4 h-4 text-muted-foreground ml-2" />
+        <button onClick={() => setMinimized(false)} className="p-2 hover:bg-primary/20 rounded-full transition-colors ml-2">
+          <Maximize2 className="w-4 h-4 text-primary" />
+        </button>
       </motion.div>
     );
   }
@@ -70,30 +108,55 @@ export function LiveTimerPanel() {
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 50 }}
-        className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-xl flex flex-col items-center justify-center p-6"
+        className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6 overflow-hidden"
       >
         <div 
-          className="absolute inset-0 opacity-20 pointer-events-none"
+          className="absolute inset-0 opacity-10 pointer-events-none"
           style={{ backgroundColor: subject.color }}
         />
-        
-        <button 
-          onClick={() => setMinimized(true)}
-          className="absolute top-8 left-8 w-12 h-12 rounded-full glass flex items-center justify-center text-foreground hover:bg-background/50 transition-colors z-10"
-        >
-          <Minimize2 className="w-5 h-5" />
-        </button>
 
-        <div className="text-center z-10 w-full max-w-2xl">
+        {/* 3D Animated Avatar Layer */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center opacity-30 pointer-events-none mix-blend-screen scale-[1.5] md:scale-125">
+           <Player
+              ref={lottieRef}
+              src="https://assets3.lottiefiles.com/packages/lf20_w51pcehl.json"
+              loop
+              autoplay={isRunning}
+              className="w-full max-w-[800px] opacity-80"
+            />
+        </div>
+        
+        <div className="absolute top-8 left-8 flex gap-4 z-10">
+          <button 
+            onClick={() => {
+              if (document.fullscreenElement) document.exitFullscreen();
+              setMinimized(true);
+            }}
+            className="w-12 h-12 rounded-full glass flex items-center justify-center text-foreground hover:bg-background/50 transition-colors shadow-lg"
+            title="Minimize"
+          >
+            <Minimize2 className="w-5 h-5" />
+          </button>
+          
+          <button 
+            onClick={toggleFullscreen}
+            className="w-12 h-12 rounded-full glass flex items-center justify-center text-foreground hover:bg-background/50 transition-colors shadow-lg"
+            title="Toggle Fullscreen"
+          >
+            {isFullscreen ? <Shrink className="w-5 h-5" /> : <Expand className="w-5 h-5" />}
+          </button>
+        </div>
+
+        <div className="text-center z-10 w-full max-w-2xl mt-12 relative">
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", delay: 0.1 }}
-            className="w-24 h-24 mx-auto rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-2xl relative"
+            className="w-20 h-20 mx-auto rounded-3xl flex items-center justify-center text-3xl mb-6 shadow-2xl relative"
             style={{ backgroundColor: subject.color }}
           >
             {isRunning && (
-              <span className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 border-4 border-background rounded-full animate-pulse" />
+              <span className="absolute -top-2 -right-2 w-5 h-5 bg-green-500 border-4 border-background rounded-full animate-pulse" />
             )}
             <span className="text-white drop-shadow-md">{subject.icon}</span>
           </motion.div>
@@ -102,7 +165,7 @@ export function LiveTimerPanel() {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-2xl font-semibold text-muted-foreground mb-2"
+            className="text-2xl font-bold text-muted-foreground mb-2 tracking-wide"
           >
             {subject.name}
           </motion.h2>
@@ -111,7 +174,7 @@ export function LiveTimerPanel() {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="text-4xl md:text-5xl font-black mb-12 line-clamp-2 leading-tight"
+            className="text-4xl md:text-6xl font-black mb-12 line-clamp-2 leading-tight drop-shadow-md"
           >
             {schedule.taskTitle}
           </motion.h1>
@@ -120,12 +183,12 @@ export function LiveTimerPanel() {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", delay: 0.4 }}
-            className="glass-panel py-8 px-12 rounded-[3rem] inline-block mb-16 shadow-[0_0_40px_rgba(var(--primary),0.1)] relative overflow-hidden"
+            className="glass-panel py-8 px-12 rounded-[3rem] inline-block mb-16 shadow-[0_0_50px_rgba(var(--primary),0.15)] relative overflow-hidden backdrop-blur-2xl bg-background/40 border-primary/20 border-2"
           >
             {isRunning && (
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent animate-shimmer" />
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent animate-[shimmer_2s_infinite]" />
             )}
-            <p className="font-mono text-7xl md:text-8xl font-black tracking-tighter text-foreground drop-shadow-lg tabular-nums">
+            <p className="font-mono text-7xl md:text-[7rem] font-black tracking-tighter text-foreground drop-shadow-2xl tabular-nums leading-none">
               {formatTime(elapsed)}
             </p>
           </motion.div>
@@ -139,29 +202,30 @@ export function LiveTimerPanel() {
             {isRunning ? (
               <Button 
                 onClick={pauseTimer} 
-                className="w-20 h-20 rounded-[2rem] flex items-center justify-center bg-amber-500 hover:bg-amber-600 text-white shadow-xl hover:scale-105 transition-all"
+                className="w-24 h-24 rounded-[2.5rem] flex items-center justify-center bg-amber-500 hover:bg-amber-600 text-white shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:scale-105 transition-all"
               >
-                <Pause className="w-8 h-8 fill-current" />
+                <Pause className="w-10 h-10 fill-current" />
               </Button>
             ) : (
               <Button 
                 onClick={resumeTimer} 
-                className="w-20 h-20 rounded-[2rem] flex items-center justify-center bg-green-500 hover:bg-green-600 text-white shadow-xl hover:scale-105 transition-all"
+                className="w-24 h-24 rounded-[2.5rem] flex items-center justify-center bg-green-500 hover:bg-green-600 text-white shadow-[0_0_30px_rgba(34,197,94,0.3)] hover:scale-105 transition-all"
               >
-                <Play className="w-8 h-8 fill-current ml-1" />
+                <Play className="w-10 h-10 fill-current ml-2" />
               </Button>
             )}
 
             <Button 
               onClick={() => {
                 if (confirm('Stop the timer and save your session?')) {
+                  if (document.fullscreenElement) document.exitFullscreen();
                   stopTimer(schedule, false);
                 }
               }} 
               variant="danger"
-              className="w-20 h-20 rounded-[2rem] flex items-center justify-center shadow-xl hover:scale-105 transition-all"
+              className="w-24 h-24 rounded-[2.5rem] flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.3)] hover:scale-105 transition-all"
             >
-              <Square className="w-7 h-7 fill-current" />
+              <Square className="w-8 h-8 fill-current" />
             </Button>
           </motion.div>
         </div>
