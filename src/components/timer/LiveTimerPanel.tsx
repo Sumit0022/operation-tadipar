@@ -121,7 +121,7 @@ function StudyIllustration({ isRunning, color }: { isRunning: boolean; color: st
   );
 }
 
-/* ─── Circular Progress Ring ──────────────────────────────────────── */
+/* ─── Circular Progress ───────────────────────────────────────────── */
 function ProgressRing({ progress, size, strokeWidth, color, isRunning }: {
   progress: number; size: number; strokeWidth: number; color: string; isRunning: boolean;
 }) {
@@ -186,6 +186,18 @@ export function LiveTimerPanel() {
     return () => clearInterval(interval);
   }, [activeSession]);
 
+  // When activeSession becomes null, clean up PiP and minimized state
+  useEffect(() => {
+    if (!activeSession) {
+      if (pipWindow) {
+        try { pipWindow.close(); } catch {}
+        setPipWindow(null);
+      }
+      setMinimized(false);
+      setShowStopConfirm(false);
+    }
+  }, [activeSession, pipWindow]);
+
   const isRunning = activeSession?.status === 'running';
 
   useEffect(() => {
@@ -194,18 +206,23 @@ export function LiveTimerPanel() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  if (!activeSession) return null;
+  // Derive schedule/subject — needed for rendering
+  const schedule = activeSession ? schedules.find(s => s.id === activeSession.scheduleId) : null;
+  const subject = activeSession ? subjects.find(s => s.id === activeSession.subjectId) : null;
 
-  const schedule = schedules.find(s => s.id === activeSession.scheduleId);
-  const subject = subjects.find(s => s.id === activeSession.subjectId);
-  if (!schedule || !subject) return null;
-
-  // Calculate scheduled duration from start/end time
+  // Calculate scheduled duration
   const scheduledDurationSeconds = useMemo(() => {
-    const [sh, sm] = schedule.startTime.split(':').map(Number);
-    const [eh, em] = schedule.endTime.split(':').map(Number);
-    return ((eh * 60 + em) - (sh * 60 + sm)) * 60;
-  }, [schedule.startTime, schedule.endTime]);
+    if (!schedule) return 0;
+    try {
+      const [sh, sm] = schedule.startTime.split(':').map(Number);
+      const [eh, em] = schedule.endTime.split(':').map(Number);
+      let dur = ((eh * 60 + em) - (sh * 60 + sm)) * 60;
+      if (dur <= 0) dur += 24 * 60 * 60; // handle overnight
+      return dur;
+    } catch {
+      return 0;
+    }
+  }, [schedule]);
 
   const progress = scheduledDurationSeconds > 0 ? Math.min(elapsed / scheduledDurationSeconds, 1) : 0;
 
@@ -242,7 +259,7 @@ export function LiveTimerPanel() {
     if ('documentPictureInPicture' in window) {
       try {
         const dpip = (window as any).documentPictureInPicture;
-        const pip = await dpip.requestWindow({ width: 340, height: 120 });
+        const pip = await dpip.requestWindow({ width: 340, height: 80 });
 
         [...document.styleSheets].forEach((sheet) => {
           try {
@@ -297,23 +314,21 @@ export function LiveTimerPanel() {
     }
   };
 
+  // ─── Nothing active → render nothing ──────────────────────────
+  if (!activeSession || !schedule || !subject) return null;
+
   /* ─── PiP View ────────────────────────────────────────────────── */
   const PiPView = () => (
     <div
       className="w-screen h-screen bg-background flex items-center justify-center cursor-pointer relative overflow-hidden group"
       onClick={maximizeFromPip}
     >
-      {/* Timer only */}
       <p className="font-mono text-5xl font-black tabular-nums tracking-tighter text-foreground z-10">
         {formatTime(elapsed)}
       </p>
-
-      {/* Progress bar at bottom */}
       <div className="absolute bottom-0 left-0 w-full h-1.5 bg-border/20">
         <div className="h-full transition-all duration-1000 ease-linear rounded-r-full" style={{ width: `${progress * 100}%`, backgroundColor: subject.color }} />
       </div>
-
-      {/* Hover overlay */}
       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
         <Maximize2 className="w-6 h-6 text-white" />
       </div>
@@ -362,9 +377,11 @@ export function LiveTimerPanel() {
   return (
     <AnimatePresence>
       <motion.div
+        key="timer-fullscreen"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
         className="fixed inset-0 z-[100] bg-background overflow-hidden flex flex-col"
       >
         {/* Warm ambient background */}
@@ -416,7 +433,7 @@ export function LiveTimerPanel() {
           </motion.div>
         </div>
 
-        {/* Main Content — Two Column on Desktop, Stacked on Mobile */}
+        {/* Main Content */}
         <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-16 px-6 pb-6 relative z-10 overflow-y-auto">
           {/* Left: Study Illustration */}
           <motion.div
