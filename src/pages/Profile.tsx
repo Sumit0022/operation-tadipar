@@ -143,19 +143,6 @@ export default function Profile() {
                         />
                       </div>
                     </div>
-                    
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-muted-foreground pl-1 flex items-center gap-2">
-                        <ImageIcon className="w-4 h-4" /> Avatar URL
-                      </label>
-                      <input
-                        type="url"
-                        placeholder="https://example.com/avatar.png"
-                        value={formData.photoURL}
-                        onChange={(e) => setFormData({ ...formData, photoURL: e.target.value })}
-                        className="w-full glass-input rounded-2xl py-3 px-4 font-medium text-foreground placeholder:text-muted-foreground/50 text-sm"
-                      />
-                    </div>
 
                     <div className="flex items-center gap-3 pt-2">
                       <Button onClick={handleSave} disabled={isSaving} className="flex-1 h-12 rounded-xl font-bold flex items-center justify-center gap-2">

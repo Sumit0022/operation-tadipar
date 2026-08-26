@@ -32,7 +32,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     const { user, profile } = useAuthStore.getState();
     if (!user || !profile) return;
     const newProfile = { ...profile, ...data };
-    await setDoc(doc(db, 'users', user.uid), newProfile, { merge: true });
+    
+    try {
+      const savePromise = setDoc(doc(db, 'users', user.uid), newProfile, { merge: true });
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000));
+      await Promise.race([savePromise, timeoutPromise]);
+    } catch (e) {
+      console.warn("Cloud save timeout/error, updating locally", e);
+    }
+    
     set({ profile: newProfile });
   },
   logout: async () => {
