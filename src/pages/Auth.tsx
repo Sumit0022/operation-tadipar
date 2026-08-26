@@ -131,7 +131,7 @@ export default function Auth() {
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full bg-background/50 dark:bg-black/40 border border-border/50 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium text-foreground placeholder:text-muted-foreground"
+                    className="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-medium text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
                 <div className="relative group">
@@ -142,7 +142,7 @@ export default function Auth() {
                     required
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full bg-background/50 dark:bg-black/40 border border-border/50 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium text-foreground placeholder:text-muted-foreground"
+                    className="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-medium text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
                 
@@ -199,7 +199,7 @@ export default function Auth() {
                     required
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
-                    className="w-full bg-background/50 dark:bg-black/40 border border-border/50 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 transition-all font-medium text-foreground placeholder:text-muted-foreground"
+                    className="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-medium text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
                 <div className="relative group">
@@ -210,7 +210,7 @@ export default function Auth() {
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full bg-background/50 dark:bg-black/40 border border-border/50 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 transition-all font-medium text-foreground placeholder:text-muted-foreground"
+                    className="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-medium text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
                 <div className="relative group">
@@ -222,7 +222,7 @@ export default function Auth() {
                     minLength={6}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full bg-background/50 dark:bg-black/40 border border-border/50 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 transition-all font-medium text-foreground placeholder:text-muted-foreground"
+                    className="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-medium text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
                 
