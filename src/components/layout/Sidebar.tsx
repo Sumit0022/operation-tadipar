@@ -26,7 +26,7 @@ export function Sidebar() {
             <div className="absolute inset-0 bg-primary/20" />
             <Target className="w-5 h-5 text-primary relative z-10" />
           </div>
-          <h1 className="flex flex-col font-black text-xl tracking-tighter uppercase text-foreground/90 leading-tight">
+          <h1 className="flex font-black text-xl tracking-tighter uppercase text-foreground/90 leading-tight items-center">
             <span>Track</span>
             <span className="text-primary">it</span>
           </h1>
