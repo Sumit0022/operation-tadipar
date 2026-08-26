@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Compass, Search, Users, Lock, Unlock, ArrowLeft } from 'lucide-react';
+import { Compass, Search, Users, Lock, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { collection, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useGroupsStore } from '../store/groups';
-import { useAuthStore } from '../store/auth';
 import { Button } from '../components/ui/Button';
 import type { Group } from '../types';
 import toast from 'react-hot-toast';
@@ -23,7 +22,6 @@ const itemVariants = {
 export default function DiscoverGroups() {
   const navigate = useNavigate();
   const { joinGroup, myGroups } = useGroupsStore();
-  const { user } = useAuthStore();
   
   const [publicGroups, setPublicGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);

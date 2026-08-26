@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Plus, Compass, Lock, Unlock } from 'lucide-react';
+import { Users, Plus, Compass, Lock, Unlock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useGroupsStore } from '../store/groups';
 import { Button } from '../components/ui/Button';

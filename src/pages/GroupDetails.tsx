@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Users, LogOut, ArrowLeft, Trash2, Shield, Activity, BookOpen, Clock, Lock, Copy, Check } from 'lucide-react';
-import { doc, getDoc, collection, query, where } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useGroupsStore } from '../store/groups';
 import { useAuthStore } from '../store/auth';
